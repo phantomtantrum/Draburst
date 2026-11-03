@@ -10,14 +10,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'label inline-flex items-center justify-center gap-2 border select-none whitespace-nowrap ' +
+  'ui-label inline-flex items-center justify-center gap-2 border select-none whitespace-nowrap ' +
   'transition-[background-color,color,border-color] duration-[var(--dur-micro)] ease-[var(--ease-mech)] ' +
   'disabled:opacity-40 disabled:pointer-events-none';
 
 const variants: Record<Variant, string> = {
   primary: 'bg-fg text-bg border-fg hover:bg-bg hover:text-fg',
   secondary: 'bg-transparent text-fg border-rule-strong hover:border-fg',
-  ghost: 'bg-transparent text-muted border-transparent hover:text-fg',
+  ghost: 'bg-transparent text-body border-transparent hover:text-fg',
 };
 
 const sizes: Record<Size, string> = {

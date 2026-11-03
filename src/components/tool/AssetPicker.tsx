@@ -111,7 +111,7 @@ export function AssetPicker({
           aria-activedescendant={items[active] ? `${listId}-${active}` : undefined}
           aria-autocomplete="list"
           className={inputClass + ' pl-7 uppercase'}
-          placeholder={cls === 'crypto' ? 'SEARCH · BTC, SOL…' : 'SEARCH · SPY, AAPL…'}
+          placeholder={cls === 'crypto' ? 'Search: BTC, SOL…' : 'Search: SPY, AAPL…'}
           value={q}
           disabled={cls === 'stock' && stockOff}
           onChange={(e) => {

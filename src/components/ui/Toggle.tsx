@@ -23,7 +23,7 @@ export function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       title={help}
-      className={cn('label group flex items-center gap-2 py-1 text-left text-muted hover:text-fg max-md:min-h-11', className)}
+      className={cn('ui-label group flex items-center gap-2 py-1 text-left text-body hover:text-fg max-md:min-h-11', className)}
     >
       <span
         aria-hidden

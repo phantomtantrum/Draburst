@@ -29,7 +29,7 @@ export function DataTable<R>({
 }) {
   return (
     <div className={cn('relative w-full overflow-x-auto', className)} style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}>
-      <table className="w-full border-collapse text-[13px]">
+      <table className="w-full border-collapse text-[14px]">
         <caption className="sr-only">{caption}</caption>
         <thead className="sticky top-0 z-[1] bg-bg">
           <tr className="border-b border-rule-strong">
@@ -38,7 +38,7 @@ export function DataTable<R>({
                 key={c.key}
                 scope="col"
                 className={cn(
-                  'label py-2 font-medium whitespace-nowrap text-muted',
+                  'ui-label py-2 text-[13px] whitespace-nowrap text-muted',
                   c.align === 'right' ? 'pl-4 text-right' : 'pr-4 text-left',
                   c.className,
                 )}
@@ -90,9 +90,9 @@ export function MetricList({
   return (
     <dl className={cn('grid border-t border-l border-rule', cols, className)}>
       {items.map((it, i) => (
-        <div key={it.id ?? (typeof it.label === 'string' ? it.label : i)} data-metric={it.id} className="flex flex-col gap-1 border-r border-b border-rule px-3 py-3" title={it.hint}>
-          <dt className="label text-muted">{it.label}</dt>
-          <dd className="num text-[18px] leading-tight text-fg">{it.value}</dd>
+        <div key={it.id ?? (typeof it.label === 'string' ? it.label : i)} data-metric={it.id} className="flex flex-col gap-1.5 border-r border-b border-rule px-4 py-3.5" title={it.hint}>
+          <dt className="ui-label text-[13px] text-muted">{it.label}</dt>
+          <dd className="num text-[20px] leading-tight text-fg">{it.value}</dd>
         </div>
       ))}
     </dl>

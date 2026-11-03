@@ -3,7 +3,7 @@
 import { useId, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-/** Visible label above, helper / error below (error = `!` glyph + text, not color). */
+/** Visible label above, helper / error below (error = `!` glyph + text, tinted with --loss). */
 export function Field({
   label,
   help,
@@ -25,14 +25,14 @@ export function Field({
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className="label text-muted">
+        <label htmlFor={id} className="ui-label text-body">
           {label}
         </label>
         {aside}
       </div>
       {children({ id, describedBy, invalid: !!error })}
       {(help || error) && (
-        <p id={helpId} className={cn('text-[13px] leading-snug', error ? 'text-fg' : 'text-muted')}>
+        <p id={helpId} className={cn('text-[13px] leading-snug', error ? 'text-loss' : 'text-muted')}>
           {error ? (
             <>
               <span aria-hidden className="num mr-1">
@@ -50,9 +50,9 @@ export function Field({
 }
 
 export const inputClass =
-  'num h-9 w-full border-0 border-b border-rule bg-surface-2 px-2 text-[14px] text-fg ' +
-  'placeholder:text-muted hover:border-rule-strong focus-visible:border-fg focus-visible:outline-offset-0 ' +
-  'aria-[invalid=true]:border-fg aria-[invalid=true]:border-dashed max-md:h-11';
+  'num h-10 w-full border border-rule bg-surface-2 px-3 text-[14px] text-fg ' +
+  'placeholder:text-subtle hover:border-rule-strong focus-visible:border-fg focus-visible:outline-offset-0 ' +
+  'aria-[invalid=true]:border-loss max-md:h-11';
 
 export function TextInput({
   label,

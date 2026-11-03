@@ -53,8 +53,7 @@ export function SweepHeatmap({
               {xs.map((xv, i) => {
                 const v = values[j * nx + i]!;
                 const ok = Number.isFinite(v);
-                const g = ok ? Math.round(28 + 210 * Math.min(1, Math.abs(v) / max)) : 0;
-                const fill = `rgb(${g},${g},${g})`;
+                const a = ok ? Math.min(1, Math.abs(v) / max) : 0;
                 const isCur = current && current.x === xv && current.y === yv;
                 const isFocus = focus[0] === i && focus[1] === j;
                 const row = ny - 1 - j;
@@ -88,10 +87,11 @@ export function SweepHeatmap({
                   >
                     {!ok ? (
                       <rect width={cell - 1} height={cell - 1} fill="var(--bg)" stroke="var(--rule)" />
-                    ) : v >= 0 ? (
-                      <rect width={cell - 1} height={cell - 1} fill={fill} />
                     ) : (
-                      <rect width={cell - 1} height={cell - 1} fill="url(#qp-hatch-dense)" color={fill} stroke={fill} />
+                      <>
+                        <rect width={cell - 1} height={cell - 1} fill="var(--surface-2)" />
+                        <rect width={cell - 1} height={cell - 1} fill={v >= 0 ? 'var(--gain)' : 'var(--loss)'} fillOpacity={0.12 + 0.78 * a} />
+                      </>
                     )}
                     {isCur && <rect x={1.5} y={1.5} width={cell - 4} height={cell - 4} fill="none" stroke="var(--fg)" strokeWidth={2} />}
                     {isCur && <rect x={3} y={3} width={cell - 7} height={cell - 7} fill="none" stroke="var(--bg)" strokeWidth={1} />}
@@ -105,14 +105,14 @@ export function SweepHeatmap({
         </g>
         {ys.map((yv, j) =>
           j % Math.ceil(ny / 6) === 0 ? (
-            <text key={j} x={left - 6} y={top + (ny - 1 - j) * cell + cell / 2} dy="0.32em" textAnchor="end" className="num" fontSize={10} fill="var(--fg-muted)">
+            <text key={j} x={left - 6} y={top + (ny - 1 - j) * cell + cell / 2} dy="0.32em" textAnchor="end" className="num" fontSize={11} fill="var(--fg-muted)">
               {fmtY(yv)}
             </text>
           ) : null,
         )}
         {xs.map((xv, i) =>
           i % Math.ceil(nx / 6) === 0 ? (
-            <text key={i} x={left + i * cell + cell / 2} y={top + ny * cell + 14} textAnchor="middle" className="num" fontSize={10} fill="var(--fg-muted)">
+            <text key={i} x={left + i * cell + cell / 2} y={top + ny * cell + 14} textAnchor="middle" className="num" fontSize={11} fill="var(--fg-muted)">
               {fmtX(xv)}
             </text>
           ) : null,
@@ -122,7 +122,7 @@ export function SweepHeatmap({
         </text>
       </svg>
       <p className="label mt-1 text-muted">
-        ↑ {yLabel} · SHADE = |SHARPE| · HATCH = SHARPE &lt; 0 · ◯ BEST CELL · ▣ CURRENT
+        ↑ {yLabel} · GREEN = SHARPE &gt; 0 · RED = SHARPE &lt; 0 · STRONGER = LARGER |SHARPE| · ◯ BEST CELL · ▣ CURRENT
       </p>
     </div>
   );

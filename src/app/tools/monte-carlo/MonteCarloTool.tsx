@@ -327,7 +327,7 @@ export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
                 }}
               />
             </Panel>
-            <Panel index="B" title="Terminal distribution" aside={<span className="label text-muted">■ ≥ S₀ · ▨ &lt; S₀</span>}>
+            <Panel index="B" title="Terminal distribution" aside={<span className="label text-muted"><span className="text-gain">■ ≥ S₀</span> · <span className="text-loss">▨ &lt; S₀</span></span>}>
               <Histogram
                 edges={summary.histogram.edges}
                 counts={summary.histogram.counts}

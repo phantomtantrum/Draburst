@@ -31,7 +31,7 @@ export function Segmented<T extends string>({
   };
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <span id={id} className={cn('label text-muted', hideLabel && 'sr-only')}>
+      <span id={id} className={cn('ui-label text-body', hideLabel && 'sr-only')}>
         {label}
       </span>
       <div role="radiogroup" aria-labelledby={id} className="flex border border-rule">
@@ -60,7 +60,7 @@ export function Segmented<T extends string>({
                 }
               }}
               className={cn(
-                'label h-8 flex-1 px-2 whitespace-nowrap transition-colors duration-[var(--dur-micro)] max-md:min-h-11',
+                'ui-label h-9 flex-1 px-2 text-[13px] whitespace-nowrap transition-colors duration-[var(--dur-micro)] max-md:min-h-11',
                 i > 0 && 'border-l border-rule',
                 active ? 'bg-fg text-bg' : 'text-muted hover:bg-surface-hover hover:text-fg',
                 o.disabled && 'cursor-not-allowed opacity-40',

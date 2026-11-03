@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from 'react';
 import { BookOpen, SlidersHorizontal, X } from 'lucide-react';
 import { Disclaimer } from '@/components/ui/Disclaimer';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -82,7 +81,14 @@ export function Panel({ index, title, children, aside, className }: { index?: st
   return (
     <section className={cn('min-w-0 border-t border-rule-strong pt-4', className)} aria-label={title}>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        {index ? <SectionLabel index={index} title={title} as="h2" /> : <h2 className="label text-fg">{title}</h2>}
+        <h2 className="flex items-baseline gap-2.5 text-[18px] font-semibold tracking-[-0.01em] text-fg">
+          {index && (
+            <span aria-hidden className="num text-[13px] font-normal text-muted">
+              {index}
+            </span>
+          )}
+          {title}
+        </h2>
         {aside}
       </div>
       {children}

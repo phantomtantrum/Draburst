@@ -31,11 +31,16 @@ solid/dashed/dotted styles + direct labels + a visible data table".
 
 ## 1. Hard Constraints (non-negotiable)
 
-1. **Monochrome only.** `#000`, `#FFF`, and the neutral ramp in §2. No hue
-   anywhere: not in CSS, SVG, canvas, GLSL, images, favicons, focus rings,
-   selection color, scrollbars, or third-party widget defaults. Lint rule:
-   any hex/rgb/hsl literal outside `src/styles/tokens.css` fails CI.
-2. **Gain/loss without color** — see §6 encoding table; identical in 2D & 3D.
+1. **Monochrome UI + one semantic pair.** `#000`, `#FFF` and the neutral
+   ramp in §2 for everything structural (surfaces, text, rules, focus,
+   selection, icons). The **only** hues are `--gain` (green) and `--loss`
+   (red), used strictly to mean gain / loss / error / live (§2.1, §6). No
+   decorative color. Lint rule: any chromatic literal outside
+   `src/styles/tokens.css` fails CI; components use `var(--gain)` /
+   `var(--loss)` or the `text-gain` / `text-loss` / `bg-gain` utilities.
+2. **Gain/loss never by color alone** — color is always paired with sign,
+   glyph or line style (§6), so it still reads in grayscale and for
+   color-blind users.
 3. **No:** glassmorphism, backdrop blur, neon/glow halos, purple/pink AI
    gradients, colored gradients, emoji, stock illustration, device mockups,
    rounded cards, drop shadows, bouncy/spring easing.
@@ -90,7 +95,19 @@ Semantic tokens (dark default):
 }
 ```
 
-3D: scene clear color = `--bg`; all materials are grayscale (`color` with
+### 2.1 Semantic gain / loss (the only hues)
+
+| Token | Dark | Light | Contrast | Use |
+|---|---|---|---|---|
+| `--gain` | `#3CCF8E` | `#0A7D48` | 10.5:1 / 5.2:1 | positive values, ▲, LIVE, heatmap gain cells, paths ≥ S₀ |
+| `--loss` | `#FF5C5C` | `#C8102E` | 6.9:1 / 5.9:1 | negative values, ▼, errors, drawdown, heatmap loss cells, paths < S₀ |
+
+Heatmap cells: `--surface-2` base + the hue at `fill-opacity` 0.1–0.55
+proportional to |value|, value printed in `--fg` (stays ≥ 4.5:1 in both
+themes). Text tokens were raised for readability: `--fg-muted` `#A3A3A3`
+(8.4:1), `--fg-subtle` `#7A7A7A` (non-text). Grain opacity 1.8%.
+
+3D (not yet migrated): scene clear color = `--bg`; all materials are grayscale (`color` with
 r = g = b), additive white for density. Post-processing must not introduce
 hue (no chromatic aberration). A final `Monochrome` pass (luma only) runs
 last as a safety net.
@@ -115,20 +132,22 @@ last as a safety net.
 
 | Token | Family | Size / line-height | Tracking | Weight | Use |
 |---|---|---|---|---|---|
-| `display-xl` | Inter Tight | clamp(56px, 11vw, 176px) / 0.88 | −0.045em | 800 | hero word |
-| `display-l` | Inter Tight | clamp(40px, 6vw, 96px) / 0.92 | −0.04em | 700 | page title |
-| `display-m` | Inter Tight | clamp(28px, 3.2vw, 48px) / 1.0 | −0.03em | 700 | section title |
+| `display-xl` | Inter Tight | clamp(44px, 8vw, 112px) / 0.95 | −0.04em | 800 | hero word |
+| `display-l` | Inter Tight | clamp(32px, 4vw, 52px) / 1.05 | −0.03em | 700 | page title |
+| `display-m` | Inter Tight | clamp(24px, 2.4vw, 34px) / 1.1 | −0.02em | 700 | section title |
 | `title` | Inter Tight | 20px / 1.2 | −0.01em | 600 | panel headers |
 | `body` | Inter Tight | 16px / 1.55 | 0 | 400 | prose |
 | `small` | Inter Tight | 14px / 1.45 | 0 | 400 | help text |
 | `num-xl` | JetBrains Mono | clamp(32px, 4vw, 64px) / 1.0 | −0.02em | 500 | KPI value |
 | `num` | JetBrains Mono | 14px / 1.4 | 0 | 400 | tables, inputs |
-| `label` | JetBrains Mono | 11px / 1.3 | +0.08em, UPPERCASE | 500 | metadata, axis, `01 / MONTE CARLO` |
+| `ui-label` | Inter Tight | 14px / 1.35 | 0, sentence case | 500 | field labels, buttons, nav, segmented options, table headers |
+| `label` | JetBrains Mono | 12px / 1.35 | +0.05em, UPPERCASE | 500 | machine metadata only: status chips, readouts, axis captions, `01 / MONTE CARLO` |
 
 Rules: **all numbers in JetBrains Mono** with
 `font-variant-numeric: tabular-nums slashed-zero`; minus sign is U+2212 `−`;
 right-align numeric columns; fixed decimals per column. Body text ≥ 14px;
-`label` at 11px is only for uppercase metadata, never for content.
+anything a person reads to operate the tool (labels, buttons, help,
+disclaimers) uses `ui-label` / body, never uppercase mono.
 
 ---
 
@@ -173,18 +192,18 @@ right-align numeric columns; fixed decimals per column. Body text ≥ 14px;
 
 | Meaning | Text | Glyph | Line | Fill / Mark | 3D |
 |---|---|---|---|---|---|
-| Positive / gain | `+1.24%` | ▲ | solid, 1.5px | **solid** white | solid opaque mesh / filled point |
-| Negative / loss | `−1.24%` | ▼ | **dashed** 4-3, 1.5px | **outlined** or 45° hatch | wireframe / outlined point / dither-shaded |
+| Positive / gain | `+1.24%` in `--gain` | ▲ | solid, 1.5px, `--gain` | solid `--gain` | solid opaque mesh / filled point |
+| Negative / loss | `−1.24%` in `--loss` | ▼ | **dashed** 4-3, 1.5px, `--loss` | `--loss` tint or hatch | wireframe / outlined point / dither-shaded |
 | Neutral / zero | `0.00%` | ◆ | dotted 1-2 | gray-400 fill | gray mid-luma |
 | Benchmark | label `BENCH` | — | dotted 1-3, 1px | none | thin line |
-| Drawdown | `−` | — | — | 45° hatch / Bayer dither | carved void (negative extrusion), dither texture |
+| Drawdown | `−` | — | `--loss` 1px | `--loss` at 16% | carved void (negative extrusion), dither texture |
 | Selected / active | — | ■ | 2.5px white | inverted (white bg, black fg) | white emissive ridge (no bloom halo beyond 2px) |
 | Estimated / uncertain | `≈` prefix | — | thin, 50% alpha | dither density | fog / point density |
 | Live / stale data | `● LIVE` / `○ STALE 12s` | ● / ○ | — | — | ripple / frozen |
 
-Heatmaps (correlation, monthly returns): luminance scale + **value printed
-in cell** + hatch for negatives. Divergent scale = luminance for magnitude,
-hatching for sign. Always a numeric legend.
+Heatmaps of returns / Sharpe (monthly returns, sweep): `--gain` / `--loss`
+tint, opacity = magnitude, **value printed in cell**. Correlation stays a
+neutral luminance scale (+ hatch for ρ < 0): it is not a gain/loss.
 
 ---
 

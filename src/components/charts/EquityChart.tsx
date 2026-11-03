@@ -10,7 +10,7 @@ import { AxisLeft, ChartDefs, MARGIN, Readout, thinTicks } from './primitives';
 /**
  * Equity (solid) vs benchmark (dotted) on a log axis, trade glyphs
  * (▲ entry solid, ▽ exit outlined), and an underwater drawdown panel
- * (hatched area) sharing the time axis.
+ * (--loss tinted area) sharing the time axis.
  */
 export function EquityChart({
   t,
@@ -112,24 +112,29 @@ export function EquityChart({
               {showTrades &&
                 trades.map((tr, k) => (
                   <g key={k}>
-                    <path d={`M${X(tr.entryIndex)},${y(equity[tr.entryIndex]!) + 5}l4,7h-8z`} fill="var(--fg)" />
-                    <path d={`M${X(tr.exitIndex)},${y(equity[tr.exitIndex]!) - 5}l4,-7h-8z`} fill="var(--bg)" stroke="var(--fg)" strokeDasharray={tr.reason === 'stop' ? '2 1' : undefined} />
+                    <path d={`M${X(tr.entryIndex)},${y(equity[tr.entryIndex]!) + 5}l4,7h-8z`} fill="var(--gain)" />
+                    <path
+                      d={`M${X(tr.exitIndex)},${y(equity[tr.exitIndex]!) - 5}l4,-7h-8z`}
+                      fill="var(--bg)"
+                      stroke={tr.reason === 'stop' ? 'var(--loss)' : 'var(--fg)'}
+                      strokeDasharray={tr.reason === 'stop' ? '2 1' : undefined}
+                    />
                   </g>
                 ))}
-              <text x={6} y={12} className="label" fill="var(--fg-muted)">
-                EQUITY · LOG
+              <text x={iw - 6} y={12} textAnchor="end" className="label" fill="var(--fg-muted)">
+                EQUITY · {log ? 'LOG' : 'LINEAR'}
               </text>
               <g transform={`translate(0,${topH + 16})`}>
                 {thinTicks(yd, 3).map((v) => (
                   <g key={v} transform={`translate(0,${yd(v)})`} aria-hidden>
                     <line x2={iw} stroke="var(--rule)" />
-                    <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={10} fill="var(--fg-muted)">
+                    <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={11} fill="var(--fg-muted)">
                       {fmtPct(v, 0)}
                     </text>
                   </g>
                 ))}
-                <path d={ddArea} fill="url(#qp-hatch)" color="var(--fg-body)" />
-                <path d={ddLine} fill="none" stroke="var(--fg)" strokeWidth={1} />
+                <path d={ddArea} fill="var(--loss)" fillOpacity={0.16} />
+                <path d={ddLine} fill="none" stroke="var(--loss)" strokeWidth={1} />
                 <text x={6} y={ddH - 6} className="label" fill="var(--fg-muted)">
                   DRAWDOWN
                 </text>
@@ -138,7 +143,7 @@ export function EquityChart({
                   {xticks.map((d) => (
                     <g key={d.getTime()} transform={`translate(${x(d)},0)`}>
                       <line y2={4} stroke="var(--rule-strong)" />
-                      <text y={16} textAnchor="middle" className="num" fontSize={10} fill="var(--fg-muted)">
+                      <text y={16} textAnchor="middle" className="num" fontSize={11} fill="var(--fg-muted)">
                         {d.toISOString().slice(0, 7)}
                       </text>
                     </g>
@@ -148,7 +153,7 @@ export function EquityChart({
               {cur != null && <line x1={X(ci)} x2={X(ci)} y1={0} y2={topH + 16 + ddH} stroke="var(--fg)" />}
             </g>
           </svg>
-          <div className="label mt-1 flex flex-wrap gap-x-4 pl-16 text-muted max-sm:pl-0" aria-hidden>
+          <div className="label mt-1 flex flex-wrap gap-x-4 pl-20 text-muted max-sm:pl-0" aria-hidden>
             <span>━ STRATEGY</span>
             <span>┈ BENCHMARK</span>
             {showTrades && trades.length > 0 && <span>▲ ENTRY · ▽ EXIT · ⬚ STOP</span>}

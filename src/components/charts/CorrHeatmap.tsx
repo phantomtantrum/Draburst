@@ -19,13 +19,13 @@ export function CorrHeatmap({ corr, symbols }: { corr: number[][]; symbols: stri
       <svg width={size + 4} height={top + n * cell + 4} role="img" aria-label={`Correlation matrix of ${n} assets. Use the data table for exact values.`} className="text-fg">
         <ChartDefs />
         {symbols.map((s, j) => (
-          <text key={'c' + s} x={left + j * cell + cell / 2} y={top - 8} textAnchor="middle" className="num" fontSize={10} fill="var(--fg-muted)">
+          <text key={'c' + s} x={left + j * cell + cell / 2} y={top - 8} textAnchor="middle" className="num" fontSize={11} fill="var(--fg-muted)">
             {s}
           </text>
         ))}
         {symbols.map((s, i) => (
           <g key={'r' + s}>
-            <text x={left - 8} y={top + i * cell + cell / 2} dy="0.32em" textAnchor="end" className="num" fontSize={10} fill="var(--fg-muted)">
+            <text x={left - 8} y={top + i * cell + cell / 2} dy="0.32em" textAnchor="end" className="num" fontSize={11} fill="var(--fg-muted)">
               {s}
             </text>
             {symbols.map((_, j) => {

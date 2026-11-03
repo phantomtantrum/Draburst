@@ -43,7 +43,7 @@ export function AxisLeft({ scale, width, ticks = 5, format }: { scale: Scale; wi
       {values.map((v) => (
         <g key={v} transform={`translate(0,${scale(v)})`}>
           <line x1={0} x2={width} stroke="var(--rule)" strokeWidth={1} />
-          <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={10} fill="var(--fg-muted)">
+          <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={11} fill="var(--fg-muted)">
             {format(v)}
           </text>
         </g>
@@ -60,7 +60,7 @@ export function AxisBottom({ scale, height, ticks = 6, format }: { scale: Scale;
       {values.map((v) => (
         <g key={v} transform={`translate(${scale(v)},0)`}>
           <line y1={0} y2={4} stroke="var(--rule-strong)" />
-          <text y={16} textAnchor="middle" className="num" fontSize={10} fill="var(--fg-muted)">
+          <text y={16} textAnchor="middle" className="num" fontSize={11} fill="var(--fg-muted)">
             {format(v)}
           </text>
         </g>
@@ -72,9 +72,9 @@ export function AxisBottom({ scale, height, ticks = 6, format }: { scale: Scale;
 /** Mono readout box in the chart's top-left (crosshair values). */
 export function Readout({ lines }: { lines: Array<[string, string]> }) {
   return (
-    <div className="pointer-events-none absolute top-3 left-[76px] z-[1] border border-rule-strong bg-bg/90 px-2 py-1.5" aria-hidden>
+    <div className="pointer-events-none absolute top-3 left-[92px] z-[1] border border-rule-strong bg-bg/90 px-2 py-1.5" aria-hidden>
       {lines.map(([k, v]) => (
-        <div key={k} className="num flex justify-between gap-4 text-[11px] leading-[1.45]">
+        <div key={k} className="num flex justify-between gap-4 text-[12px] leading-[1.45]">
           <span className="text-muted">{k}</span>
           <span className="text-fg">{v}</span>
         </div>
@@ -83,4 +83,4 @@ export function Readout({ lines }: { lines: Array<[string, string]> }) {
   );
 }
 
-export const MARGIN = { top: 12, right: 16, bottom: 28, left: 64 };
+export const MARGIN = { top: 12, right: 16, bottom: 28, left: 80 };

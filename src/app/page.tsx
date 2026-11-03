@@ -46,8 +46,8 @@ export default function Home() {
                     <span>{t.shape}</span>
                   </span>
                   <span className="display-m">{t.title}</span>
-                  <span className="text-[15px] text-muted">{t.body}</span>
-                  <span className="label mt-auto text-fg group-hover:underline group-hover:underline-offset-4">Open tool →</span>
+                  <span className="text-[16px] leading-relaxed text-body">{t.body}</span>
+                  <span className="ui-label mt-auto text-fg group-hover:underline group-hover:underline-offset-4">Open tool →</span>
                 </Link>
               </li>
             ))}
@@ -70,7 +70,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <Link href="/methodology" className="label mt-8 inline-block border border-rule-strong px-4 py-3 text-fg hover:border-fg">
+          <Link href="/methodology" className="ui-label mt-8 inline-block border border-rule-strong px-4 py-3 text-fg hover:border-fg">
             Read the methodology →
           </Link>
         </section>

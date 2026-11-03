@@ -174,13 +174,13 @@ export function FrontierChart({
               style={{ left: Math.min(width - 180, hover.x + MARGIN.left + 12), top: Math.max(0, hover.y + MARGIN.top - 10) }}
             >
               <p className="label mb-1 text-fg">{hover.label}</p>
-              <p className="num text-[11px] text-muted">
+              <p className="num text-[12px] text-muted">
                 μ {fmtPct(hover.p.ret, 1)} · σ {fmtPct(hover.p.vol, 1)} · SR {fmtNum(hover.p.sharpe, 2)}
               </p>
               <WeightsMini weights={hover.p.weights} symbols={symbols} />
             </div>
           )}
-          <div className="label mt-1 flex flex-wrap gap-x-4 gap-y-1 pl-16 text-muted max-sm:pl-0" aria-hidden>
+          <div className="label mt-1 flex flex-wrap gap-x-4 gap-y-1 pl-20 text-muted max-sm:pl-0" aria-hidden>
             {markers.map((m) => (
               <span key={m.key} className="flex items-center gap-1.5">
                 <svg width="12" height="12">
@@ -211,13 +211,13 @@ export function WeightsMini({ weights, symbols, top = 6 }: { weights: ArrayLike<
     <table className="mt-1 w-full">
       <tbody>
         {shown.map((r) => (
-          <tr key={r.s} className="num text-[11px]">
+          <tr key={r.s} className="num text-[12px]">
             <td className="pr-3 text-muted">{r.s}</td>
             <td className="text-right text-fg">{fmtPct(r.w, 1)}</td>
           </tr>
         ))}
         {rows.length > top && (
-          <tr className="num text-[11px]">
+          <tr className="num text-[12px]">
             <td className="pr-3 text-muted">OTHERS</td>
             <td className="text-right text-fg">{fmtPct(rest, 1)}</td>
           </tr>

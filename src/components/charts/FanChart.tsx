@@ -21,7 +21,8 @@ export interface FanData {
 
 /**
  * Percentile fan: 5–95 sparse dither, 25–75 dense dither, median solid 2px,
- * mean dotted. Sample paths ending below S0 are dashed (MASTER §6).
+ * mean dotted. Sample paths ending above S0 are --gain, below are --loss and
+ * dashed (MASTER §6).
  * Keyboard: focus the chart, ←/→ move the crosshair.
  */
 export function FanChart({ data, height = 340, log = true, maxPaths = 120 }: { data: FanData; height?: number; log?: boolean; maxPaths?: number }) {
@@ -110,9 +111,17 @@ export function FanChart({ data, height = 340, log = true, maxPaths = 120 }: { d
             <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
               <AxisLeft scale={y} width={iw} ticks={5} format={fmtPrice} />
               <AxisBottom scale={x} height={ih} ticks={Math.max(2, Math.floor(iw / 80))} format={(v) => `T+${v}`} />
-              <g color="var(--fg-subtle)">
+              <g>
                 {paths.map((p, i) => (
-                  <path key={i} d={p.d} fill="none" stroke="currentColor" strokeOpacity={0.35} strokeWidth={0.75} strokeDasharray={p.down ? '3 2' : undefined} />
+                  <path
+                    key={i}
+                    d={p.d}
+                    fill="none"
+                    stroke={p.down ? 'var(--loss)' : 'var(--gain)'}
+                    strokeOpacity={0.28}
+                    strokeWidth={0.75}
+                    strokeDasharray={p.down ? '3 2' : undefined}
+                  />
                 ))}
               </g>
               <path d={band(data.bands[0]!, data.bands[4]!)} fill="url(#qp-dither-sparse)" color="var(--fg-muted)" />
@@ -147,7 +156,7 @@ export function FanChart({ data, height = 340, log = true, maxPaths = 120 }: { d
 function Legend() {
   const item = 'flex items-center gap-1.5';
   return (
-    <div className="label mt-2 flex flex-wrap gap-x-4 gap-y-1 pl-16 text-muted max-sm:pl-0" aria-hidden>
+    <div className="label mt-2 flex flex-wrap gap-x-4 gap-y-1 pl-20 text-muted max-sm:pl-0" aria-hidden>
       <span className={item}>
         <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--fg)" strokeWidth="2" /></svg>P50
       </span>
@@ -161,7 +170,10 @@ function Legend() {
         <svg width="12" height="10" color="var(--fg-muted)"><ChartDefs /><rect width="12" height="10" fill="url(#qp-dither-sparse)" /></svg>P5–95
       </span>
       <span className={item}>
-        <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--fg-subtle)" strokeDasharray="3 2" /></svg>PATH ▼ S₀
+        <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--gain)" /></svg>PATH ≥ S₀
+      </span>
+      <span className={item}>
+        <svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--loss)" strokeDasharray="3 2" /></svg>PATH &lt; S₀
       </span>
     </div>
   );

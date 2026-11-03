@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Enforces design-system/quantphantom/MASTER.md §1.1 — zero hue anywhere.
-// Fails if any color literal in src/ has R≠G≠B (hex, 0x, rgb[a]) or a
+// Enforces design-system/quantphantom/MASTER.md §1.1 — no hue outside the tokens.
+// Fails if any color literal in src/ (other than src/styles/tokens.css, which
+// defines the semantic gain/loss pair) has R≠G≠B (hex, 0x, rgb[a]) or a
 // saturated hsl/oklch/lch, or if a chromatic Tailwind palette class appears.
+// Components reach color only through var(--gain) / var(--loss).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
@@ -40,10 +42,15 @@ const isGrayHex = (h) => {
 const problems = [];
 for (const file of walk(SRC)) {
   const rel = relative(ROOT, file);
+  const isTokens = rel === join('src', 'styles', 'tokens.css');
   const lines = readFileSync(file, 'utf8').split('\n');
   lines.forEach((line, i) => {
     const at = `${rel}:${i + 1}`;
     if (/check-monochrome:\s*ignore/.test(line)) return;
+    if (isTokens) {
+      for (const m of line.matchAll(twClass)) problems.push(`${at}  chromatic Tailwind class ${m[0]}`);
+      return;
+    }
     // #rgb / #rrggbb / #rrggbbaa  (skip URL fragments & ids like href="#main")
     for (const m of line.matchAll(/(?<![\w&/])#([0-9a-fA-F]{3,8})\b/g)) {
       const h = m[1];

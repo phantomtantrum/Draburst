@@ -7,7 +7,7 @@ import { fmtPct, fmtPrice } from '@/lib/format';
 import { AxisBottom, ChartDefs, MARGIN } from './primitives';
 
 /**
- * Terminal distribution. Bins at/above S₀: solid. Below S₀: outlined + hatched.
+ * Terminal distribution. Bins at/above S₀: solid --gain. Below S₀: --loss, hatched.
  */
 export function Histogram({
   edges,
@@ -57,7 +57,7 @@ export function Histogram({
             {y.ticks(4).map((v) => (
               <g key={v} transform={`translate(0,${y(v)})`} aria-hidden>
                 <line x2={iw} stroke="var(--rule)" />
-                <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={10} fill="var(--fg-muted)">
+                <text x={-6} dy="0.32em" textAnchor="end" className="num" fontSize={11} fill="var(--fg-muted)">
                   {fmtPct(v, 1)}
                 </text>
               </g>
@@ -76,9 +76,10 @@ export function Histogram({
                   y={ih - h}
                   width={Math.max(0.5, x1 - x0 - 1)}
                   height={h}
-                  fill={up ? 'var(--fg)' : 'url(#qp-hatch)'}
-                  color="var(--fg-body)"
-                  stroke={up ? 'none' : 'var(--fg-body)'}
+                  fill={up ? 'var(--gain)' : 'url(#qp-hatch)'}
+                  fillOpacity={up ? 0.8 : 1}
+                  color="var(--loss)"
+                  stroke={up ? 'none' : 'var(--loss)'}
                   strokeWidth={up ? 0 : 0.75}
                 />
               );
@@ -98,7 +99,7 @@ export function Histogram({
             {markers.map((m) => (
               <g key={m.label} transform={`translate(${x(m.value)},0)`} aria-hidden>
                 <line y1={ih - 8} y2={ih} stroke="var(--fg)" strokeWidth={1.5} />
-                <text y={ih - 12} textAnchor="middle" className="label" fontSize={9} fill="var(--fg-muted)">
+                <text y={ih - 12} textAnchor="middle" className="label" fontSize={10} fill="var(--fg-muted)">
                   {m.label}
                 </text>
               </g>

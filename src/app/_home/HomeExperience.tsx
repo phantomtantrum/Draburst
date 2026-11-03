@@ -205,9 +205,20 @@ export function HomeExperience() {
               <h1 className="display-xl text-fg mix-blend-difference">
                 <ScrambleText text="quantphantom" />
               </h1>
-              <p className="mt-8 max-w-xl text-[17px] text-body">
-                A research terminal designed by a gallery. Real market data, rigorous quant math — every number on screen ready to become a sculpture.
+              <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-body">
+                Quant research tools on real market data: Monte Carlo simulation, portfolio optimization and strategy backtesting, each with a 3D view.
               </p>
+              <div className="pointer-events-auto mt-6 flex flex-wrap gap-2">
+                <Link href="/tools/monte-carlo" className="ui-label inline-flex h-10 items-center border border-fg bg-fg px-4 text-bg hover:bg-bg hover:text-fg">
+                  Monte Carlo →
+                </Link>
+                <Link href="/tools/portfolio" className="ui-label inline-flex h-10 items-center border border-rule-strong bg-bg px-4 text-fg hover:border-fg">
+                  Portfolio →
+                </Link>
+                <Link href="/tools/backtest" className="ui-label inline-flex h-10 items-center border border-rule-strong bg-bg px-4 text-fg hover:border-fg">
+                  Backtest →
+                </Link>
+              </div>
               <p className="label mt-6 text-muted max-sm:hidden">
                 TURBULENCE = REALIZED VOL · SCALE = 24H VOLUME · PROXIMITY = CORRELATION · EACH TICK = A RIPPLE{animate ? ' · SCROLL ↓' : ''}
               </p>
@@ -226,9 +237,9 @@ export function HomeExperience() {
                 <h2 id={`step-${s.idx}`} className="display-m mt-4">
                   {s.title}
                 </h2>
-                <p className="mt-4 text-[15px] text-body">{s.body}</p>
+                <p className="mt-4 text-[16px] leading-relaxed text-body">{s.body}</p>
                 <p className="label mt-4 text-muted">{s.metric}</p>
-                <Link href={s.href} className="label mt-6 inline-block border border-fg bg-fg px-4 py-2.5 text-bg hover:bg-bg hover:text-fg">
+                <Link href={s.href} className="ui-label mt-6 inline-block border border-fg bg-fg px-4 py-2.5 text-bg hover:bg-bg hover:text-fg">
                   Open tool →
                 </Link>
               </div>

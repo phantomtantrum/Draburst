@@ -8,7 +8,7 @@ export function WeightBar({ w, max = 1 }: { w: number; max?: number }) {
       <span className="num">{fmtPct(w, 1)}</span>
       <span className="relative inline-block h-2 w-16 border border-rule" aria-hidden>
         <span
-          className={'absolute inset-y-0 left-0 ' + (w >= 0 ? 'bg-fg' : 'hatch border border-fg text-fg')}
+          className={'absolute inset-y-0 left-0 ' + (w >= 0 ? 'bg-gain' : 'hatch border border-loss text-loss')}
           style={{ width: `${pct}%` }}
         />
       </span>

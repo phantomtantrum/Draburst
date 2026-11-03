@@ -30,14 +30,11 @@ export function NavLinks() {
             href={n.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'label flex items-center gap-2 transition-colors duration-[var(--dur-micro)]',
+              'ui-label flex items-center gap-2 transition-colors duration-[var(--dur-micro)]',
               mobile ? 'min-h-11 border-b border-rule px-4 py-3' : 'h-12 px-3',
-              active ? 'text-fg' : 'text-muted hover:text-fg',
+              active ? 'text-fg' : 'text-body hover:text-fg',
             )}
           >
-            <span className="num text-muted" aria-hidden>
-              {n.idx}
-            </span>
             <span className={cn(active && !mobile && 'underline decoration-1 underline-offset-[6px]')}>{n.label}</span>
           </Link>
         </li>

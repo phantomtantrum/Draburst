@@ -1,5 +1,6 @@
 /* quantphantom design tokens — source of truth: design-system/quantphantom/MASTER.md §2
-   The ONLY place raw color values may be defined. All values are neutral (R = G = B). */
+   The ONLY place raw color values may be defined. The UI is neutral (R = G = B);
+   the single exception is the semantic gain / loss pair below. */
 :root {
   --qp-black: #000000;
   --qp-gray-950: #0a0a0a;
@@ -22,15 +23,19 @@
   --surface-hover: var(--qp-gray-850);
   --fg: var(--qp-white);
   --fg-body: var(--qp-gray-200);
-  --fg-muted: var(--qp-gray-400);
-  --fg-subtle: var(--qp-gray-500);
+  --fg-muted: #a3a3a3; /* secondary text, 8.4:1 on black */
+  --fg-subtle: #7a7a7a; /* non-text marks, large display only */
   --rule: var(--qp-gray-800);
   --rule-strong: var(--qp-gray-700);
   --rule-faint: var(--qp-gray-850);
   --focus: var(--qp-white);
   --selection-bg: var(--qp-white);
   --selection-fg: var(--qp-black);
-  --grain-opacity: 0.045;
+  --grain-opacity: 0.018;
+
+  /* semantic gain / loss — the only hues in the system (MASTER §2.1, §6) */
+  --gain: #3ccf8e; /* 10.5:1 on black */
+  --loss: #ff5c5c; /* 6.9:1 on black */
 
   /* motion */
   --dur-micro: 80ms;
@@ -49,7 +54,7 @@
   --surface-hover: #e6e6e6;
   --fg: #000000;
   --fg-body: #2e2e2e;
-  --fg-muted: #5e5e5e; /* 7:1 on white */
+  --fg-muted: #555555; /* 7.5:1 on white */
   --fg-subtle: #8a8a8a;
   --rule: #e0e0e0;
   --rule-strong: #c7c7c7;
@@ -57,6 +62,8 @@
   --focus: #000000;
   --selection-bg: #000000;
   --selection-fg: #ffffff;
-  --grain-opacity: 0.06;
+  --grain-opacity: 0.025;
+  --gain: #0a7d48; /* 5.2:1 on white */
+  --loss: #c8102e; /* 5.9:1 on white */
   color-scheme: light;
 }

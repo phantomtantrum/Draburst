@@ -2,8 +2,8 @@ import { cn } from '@/lib/cn';
 import { fmtPct, fmtSigned, signOf } from '@/lib/format';
 
 /**
- * Gain/loss without color (MASTER §6): sign + glyph + weight.
- * pos: ▲ solid, neg: ▼ + underline dashed, zero: ◆ muted.
+ * Gain/loss (MASTER §6): --gain / --loss color, always paired with sign + glyph
+ * so it still reads in grayscale. pos: ▲ green, neg: ▼ red, zero: ◆ muted.
  */
 export function Delta({
   value,
@@ -27,8 +27,8 @@ export function Delta({
     <span
       className={cn(
         'num relative inline-flex items-baseline gap-1 whitespace-nowrap',
-        s === 'pos' && 'text-fg',
-        s === 'neg' && 'text-fg underline decoration-dashed decoration-1 underline-offset-4',
+        s === 'pos' && 'text-gain',
+        s === 'neg' && 'text-loss',
         s === 'zero' && 'text-muted',
         className,
       )}
