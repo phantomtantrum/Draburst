@@ -1,0 +1,62 @@
+/* quantphantom design tokens — source of truth: design-system/quantphantom/MASTER.md §2
+   The ONLY place raw color values may be defined. All values are neutral (R = G = B). */
+:root {
+  --qp-black: #000000;
+  --qp-gray-950: #0a0a0a;
+  --qp-gray-900: #111111;
+  --qp-gray-850: #171717;
+  --qp-gray-800: #1f1f1f;
+  --qp-gray-700: #2e2e2e;
+  --qp-gray-600: #474747;
+  --qp-gray-500: #6b6b6b; /* non-text only (3.9:1) */
+  --qp-gray-400: #8a8a8a; /* minimum for text on black (6.1:1) */
+  --qp-gray-300: #b0b0b0;
+  --qp-gray-200: #d4d4d4;
+  --qp-gray-100: #ededed;
+  --qp-white: #ffffff;
+
+  /* semantic — dark default */
+  --bg: var(--qp-black);
+  --surface: var(--qp-gray-950);
+  --surface-2: var(--qp-gray-900);
+  --surface-hover: var(--qp-gray-850);
+  --fg: var(--qp-white);
+  --fg-body: var(--qp-gray-200);
+  --fg-muted: var(--qp-gray-400);
+  --fg-subtle: var(--qp-gray-500);
+  --rule: var(--qp-gray-800);
+  --rule-strong: var(--qp-gray-700);
+  --rule-faint: var(--qp-gray-850);
+  --focus: var(--qp-white);
+  --selection-bg: var(--qp-white);
+  --selection-fg: var(--qp-black);
+  --grain-opacity: 0.045;
+
+  /* motion */
+  --dur-micro: 80ms;
+  --dur-small: 120ms;
+  --dur-panel: 200ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* expo.out — no overshoot */
+  --ease-mech: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #ffffff;
+  --surface: #f5f5f5;
+  --surface-2: #ededed;
+  --surface-hover: #e6e6e6;
+  --fg: #000000;
+  --fg-body: #2e2e2e;
+  --fg-muted: #5e5e5e; /* 7:1 on white */
+  --fg-subtle: #8a8a8a;
+  --rule: #e0e0e0;
+  --rule-strong: #c7c7c7;
+  --rule-faint: #ededed;
+  --focus: #000000;
+  --selection-bg: #000000;
+  --selection-fg: #ffffff;
+  --grain-opacity: 0.06;
+  color-scheme: light;
+}
