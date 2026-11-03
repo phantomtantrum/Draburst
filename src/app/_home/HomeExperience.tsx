@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { Delta } from '@/components/ui/Delta';
 import { UtcClock } from '@/components/shell/UtcClock';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { ScrambleText } from '@/components/ui/ScrambleText';
+import { QuantumField } from './QuantumField';
 import type { ClusterState, SculptureInputs } from '@/components/three/Sculpture';
 import { startLive, useLive } from '@/lib/live/binanceStream';
 import { correlationLayout } from '@/lib/live/layout';
@@ -31,8 +34,9 @@ interface AssetInfo {
 }
 
 /**
- * Landing hero: plain headline + calls to action on the left, a live market
- * panel on the right (3D sculpture on capable devices, always a price table).
+ * Landing: a black first screen with the quantum interference field and the
+ * giant wordmark, then the live market panel (3D sculpture on capable GPUs,
+ * always a price table).
  */
 export function HomeHero() {
   const mode = useStageMode();
@@ -105,95 +109,120 @@ export function HomeHero() {
   const show3D = mode === 'full' || mode === 'static';
 
   return (
-    <section
-      aria-labelledby="hero-title"
-      className="mx-auto grid max-w-[1400px] items-center gap-12 px-4 pt-14 pb-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16 lg:px-6 lg:pt-24 lg:pb-28"
-    >
-      <div>
-        <p className="ui-label inline-flex items-center gap-2 border border-rule bg-surface px-3 py-1.5 text-[13px] text-body">
-          <span aria-hidden className="inline-block size-1.5 rounded-full bg-gain" />
-          Free · live crypto data · no sign-up needed
-        </p>
-        <h1 id="hero-title" className="mt-6 text-[clamp(38px,5.2vw,64px)] leading-[1.04] font-bold tracking-[-0.035em] text-fg">
-          Quant research on real market data.
-        </h1>
-        <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-body">
-          Simulate thousands of price paths, build an efficient portfolio and backtest a trading strategy, right in your browser. Every formula is
-          shown, every run is reproducible.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/tools/monte-carlo" className="ui-label inline-flex h-11 items-center border border-fg bg-fg px-5 text-bg hover:bg-transparent hover:text-fg">
-            Start with Monte Carlo →
-          </Link>
-          <Link href="#tools" className="ui-label inline-flex h-11 items-center border border-rule-strong px-5 text-fg hover:border-fg">
-            See all tools
-          </Link>
+    <>
+      {/* ── first screen: black, quantum interference field, the wordmark ── */}
+      <section aria-labelledby="hero-title" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-bg">
+        <QuantumField className="absolute inset-0 -z-10 h-full w-full" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-bg via-bg/60 to-transparent" />
+        <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col justify-between px-4 pt-6 pb-10 lg:px-6 lg:pb-14">
+          <div className="flex items-start justify-between gap-4">
+            <SectionLabel index="00" title="Quantum field · |ψ|²" />
+            <div className="label flex flex-col items-end gap-1 text-muted">
+              <StatusChip status={status} />
+              <UtcClock className="num max-sm:hidden" />
+              <span className="max-sm:hidden">SRC BINANCE WS · TIINGO EOD</span>
+            </div>
+          </div>
+          <div>
+            <h1 id="hero-title" className="wordmark text-fg">
+              <ScrambleText text="quantphantom" />
+            </h1>
+            <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <p className="max-w-xl text-[18px] leading-relaxed text-body">
+                Quant research on real market data: Monte Carlo simulation, portfolio optimization and strategy backtesting, right in your
+                browser.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/tools/monte-carlo" className="ui-label inline-flex h-11 items-center border border-fg bg-fg px-5 text-bg hover:bg-transparent hover:text-fg">
+                  Start with Monte Carlo →
+                </Link>
+                <Link href="#tools" className="ui-label inline-flex h-11 items-center border border-rule-strong bg-bg/60 px-5 text-fg hover:border-fg">
+                  See all tools
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="mt-8 text-[13px] text-muted">Data from Binance (live) and Tiingo (end of day). Not investment advice.</p>
-      </div>
+      </section>
 
-      <div className="min-w-0 border border-rule bg-surface">
-        <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
-          <h2 className="ui-label text-fg">Market now</h2>
-          <div className="flex items-center gap-3">
-            <UtcClock className="label num hidden text-muted sm:inline" />
-            <StatusChip status={status} />
+      {/* ── live market ── */}
+      <section aria-labelledby="market-title" className="border-t border-rule">
+        <div className="mx-auto grid max-w-[1600px] items-start gap-10 px-4 py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16 lg:px-6 lg:py-24">
+          <div>
+            <p className="ui-label text-muted">Live market</p>
+            <h2 id="market-title" className="mt-2 text-[clamp(28px,3vw,40px)] leading-tight font-bold tracking-[-0.025em] text-fg">
+              Real prices, streamed as they trade.
+            </h2>
+            <p className="mt-4 max-w-md text-[16px] leading-relaxed text-body">
+              Crypto ticks arrive live from Binance; stocks and ETFs come end-of-day from Tiingo. Every tool runs on the same data.
+            </p>
+            <p className="mt-6 text-[13px] text-muted">Not investment advice.</p>
+          </div>
+
+          <div className="min-w-0 border border-rule bg-surface">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <h3 className="ui-label text-fg">Market now</h3>
+              <div className="flex items-center gap-3">
+                <UtcClock className="label num hidden text-muted sm:inline" />
+                <StatusChip status={status} />
+              </div>
+            </div>
+            {show3D && (
+              <div className="relative h-[220px] border-b border-rule bg-bg sm:h-[260px]">
+                <HeroCanvas
+                  inputs={inputsRef}
+                  nClusters={CRYPTO.length}
+                  animate={mode === 'full' && !reduce}
+                  label="Live market sculpture: one particle cluster per crypto asset; turbulence follows realized volatility, size follows 24-hour volume, and correlated assets sit close together. Prices are listed in the table below."
+                />
+                <p className="label pointer-events-none absolute bottom-2 left-3 text-muted">One cluster per asset · motion = volatility</p>
+              </div>
+            )}
+            <table className="w-full border-collapse text-[14px]">
+              <caption className="sr-only">Latest crypto prices</caption>
+              <thead>
+                <tr className="border-b border-rule text-left">
+                  <th scope="col" className="ui-label px-4 py-2 text-[13px] text-muted">
+                    Asset
+                  </th>
+                  <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
+                    Price
+                  </th>
+                  <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
+                    {anyLive ? '24h' : '1d'}
+                  </th>
+                  <th scope="col" className="ui-label hidden px-4 py-2 text-right text-[13px] text-muted sm:table-cell">
+                    30d vol
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length
+                  ? rows.map((r) => (
+                      <tr key={r.symbol} className="border-b border-rule last:border-b-0">
+                        <th scope="row" className="px-4 py-2.5 text-left font-normal whitespace-nowrap">
+                          <span className="num text-fg">{r.symbol}</span> <span className="ml-1 text-[13px] text-muted max-sm:hidden">{r.name}</span>
+                        </th>
+                        <td className="num px-4 py-2.5 text-right text-fg">{fmtPrice(r.price)}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          <Delta value={r.change} />
+                        </td>
+                        <td className="num hidden px-4 py-2.5 text-right text-body sm:table-cell">{fmtPct(r.vol30, 0)}</td>
+                      </tr>
+                    ))
+                  : Array.from({ length: SHOWN }, (_, i) => (
+                      <tr key={i} className="border-b border-rule last:border-b-0" aria-hidden>
+                        <td colSpan={4} className="px-4 py-2.5">
+                          <span className="block h-[21px] w-full animate-pulse bg-surface-2" />
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
           </div>
         </div>
-        {show3D && (
-          <div className="relative h-[220px] border-b border-rule bg-bg sm:h-[260px]">
-            <HeroCanvas
-              inputs={inputsRef}
-              nClusters={CRYPTO.length}
-              animate={mode === 'full' && !reduce}
-              label="Live market sculpture: one particle cluster per crypto asset; turbulence follows realized volatility, size follows 24-hour volume, and correlated assets sit close together. Prices are listed in the table below."
-            />
-            <p className="label pointer-events-none absolute bottom-2 left-3 text-muted">One cluster per asset · motion = volatility</p>
-          </div>
-        )}
-        <table className="w-full border-collapse text-[14px]">
-          <caption className="sr-only">Latest crypto prices</caption>
-          <thead>
-            <tr className="border-b border-rule text-left">
-              <th scope="col" className="ui-label px-4 py-2 text-[13px] text-muted">
-                Asset
-              </th>
-              <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
-                Price
-              </th>
-              <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
-                {anyLive ? '24h' : '1d'}
-              </th>
-              <th scope="col" className="ui-label hidden px-4 py-2 text-right text-[13px] text-muted sm:table-cell">
-                30d vol
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length
-              ? rows.map((r) => (
-                  <tr key={r.symbol} className="border-b border-rule last:border-b-0">
-                    <th scope="row" className="px-4 py-2.5 text-left font-normal whitespace-nowrap">
-                      <span className="num text-fg">{r.symbol}</span> <span className="ml-1 text-[13px] text-muted max-sm:hidden">{r.name}</span>
-                    </th>
-                    <td className="num px-4 py-2.5 text-right text-fg">{fmtPrice(r.price)}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <Delta value={r.change} />
-                    </td>
-                    <td className="num hidden px-4 py-2.5 text-right text-body sm:table-cell">{fmtPct(r.vol30, 0)}</td>
-                  </tr>
-                ))
-              : Array.from({ length: SHOWN }, (_, i) => (
-                  <tr key={i} className="border-b border-rule last:border-b-0" aria-hidden>
-                    <td colSpan={4} className="px-4 py-2.5">
-                      <span className="block h-[21px] w-full animate-pulse bg-surface-2" />
-                    </td>
-                  </tr>
-                ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 

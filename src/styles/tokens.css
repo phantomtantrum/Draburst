@@ -16,18 +16,18 @@
   --qp-gray-100: #ededed;
   --qp-white: #ffffff;
 
-  /* semantic — dark default. Soft charcoal, not pure black: easier on the eyes */
-  --bg: #121212;
-  --surface: #181818;
-  --surface-2: #1e1e1e;
-  --surface-hover: #242424;
-  --fg: #f2f2f2;
+  /* semantic — dark default: true black, flat (no grain), soft off-white text */
+  --bg: #000000;
+  --surface: #0b0b0b;
+  --surface-2: #131313;
+  --surface-hover: #1a1a1a;
+  --fg: #f5f5f5;
   --fg-body: #d6d6d6;
-  --fg-muted: #a3a3a3; /* secondary text, 7.4:1 on --bg */
+  --fg-muted: #a3a3a3; /* secondary text, 8.4:1 on --bg */
   --fg-subtle: #7a7a7a; /* non-text marks, large display only */
-  --rule: #2a2a2a;
-  --rule-strong: #3a3a3a;
-  --rule-faint: #1f1f1f;
+  --rule: #1f1f1f;
+  --rule-strong: #2e2e2e;
+  --rule-faint: #161616;
   --focus: var(--fg);
   --selection-bg: var(--fg);
   --selection-fg: var(--bg);

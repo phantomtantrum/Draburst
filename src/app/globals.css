@@ -127,6 +127,15 @@
     letter-spacing: 0;
     font-weight: 500;
   }
+  /* the site name on the first screen, as in the first versions */
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: clamp(56px, 13.2vw, 210px);
+    line-height: 0.86;
+    letter-spacing: -0.05em;
+    font-weight: 800;
+    margin-left: -0.04em;
+  }
   .display-xl {
     font-family: var(--font-display);
     font-size: clamp(44px, 8vw, 112px);

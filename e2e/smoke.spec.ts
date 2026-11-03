@@ -14,7 +14,7 @@ function trackErrors(page: Page) {
 test('home renders, nav works, no console errors', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Quant research on real market data');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('quantphantom');
   await expect(page.getByText('Not investment advice.').first()).toBeVisible();
   expect(errors).toEqual([]);
 });

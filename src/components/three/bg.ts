@@ -1,2 +1,2 @@
-/** Canvas clear color — matches the --bg token (#121212). */
-export const STAGE_BG = 0x121212;
+/** Canvas clear color — matches the --bg token (#000000). */
+export const STAGE_BG = 0x000000;

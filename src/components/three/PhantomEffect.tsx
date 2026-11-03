@@ -46,13 +46,13 @@ export interface PhantomOptions {
   levels?: number;
   dither?: number;
   animate?: boolean;
-  /** background luma (0–1, linear) kept flat; defaults to the --bg token #121212 */
+  /** background luma (0–1, linear) kept flat; defaults to the --bg token #000000 */
   bg?: number;
 }
 
-/** The effect runs on linear color, so the sRGB --bg (#121212) is converted once. */
+/** The effect runs on linear color, so the sRGB --bg is converted once. */
 const srgbToLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-const BG_LINEAR = srgbToLinear(0x12 / 255);
+const BG_LINEAR = srgbToLinear(0x00 / 255);
 
 class PhantomEffectImpl extends Effect {
   animate: boolean;
