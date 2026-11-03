@@ -20,7 +20,7 @@ export function NumberField({
   className,
   digits,
 }: {
-  label: string;
+  label: ReactNode;
   value: number;
   onChange: (v: number) => void;
   min?: number;

@@ -12,7 +12,7 @@ export function Field({
   className,
   aside,
 }: {
-  label: string;
+  label: ReactNode;
   help?: ReactNode;
   error?: string | null;
   children: (props: { id: string; describedBy?: string; invalid: boolean }) => ReactNode;

@@ -82,15 +82,15 @@ export function MetricList({
   className,
   columns = 2,
 }: {
-  items: ReadonlyArray<{ label: string; value: ReactNode; hint?: string }>;
+  items: ReadonlyArray<{ label: ReactNode; value: ReactNode; hint?: string; id?: string }>;
   className?: string;
   columns?: 1 | 2 | 3 | 4;
 }) {
   const cols = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-2 lg:grid-cols-3', 4: 'grid-cols-2 lg:grid-cols-4' }[columns];
   return (
     <dl className={cn('grid border-t border-l border-rule', cols, className)}>
-      {items.map((it) => (
-        <div key={it.label} className="flex flex-col gap-1 border-r border-b border-rule px-3 py-3" title={it.hint}>
+      {items.map((it, i) => (
+        <div key={it.id ?? (typeof it.label === 'string' ? it.label : i)} data-metric={it.id} className="flex flex-col gap-1 border-r border-b border-rule px-3 py-3" title={it.hint}>
           <dt className="label text-muted">{it.label}</dt>
           <dd className="num text-[18px] leading-tight text-fg">{it.value}</dd>
         </div>
