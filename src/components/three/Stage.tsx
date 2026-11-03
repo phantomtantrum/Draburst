@@ -24,6 +24,7 @@ export function Stage({
   overlay,
   autoRotate = true,
   target = [0, 0, 0],
+  pointThreshold = 0.06,
 }: {
   mode: Exclude<StageMode, 'none'>;
   label: string;
@@ -33,6 +34,8 @@ export function Stage({
   overlay?: ReactNode;
   autoRotate?: boolean;
   target?: [number, number, number];
+  /** raycast pick radius for THREE.Points (world units) */
+  pointThreshold?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const active = useActive(ref);
@@ -46,6 +49,7 @@ export function Stage({
         dpr={[1, dpr]}
         frameloop={!active ? 'never' : full ? 'always' : 'demand'}
         camera={{ position: camera, fov: 35, near: 0.1, far: 100 }}
+        raycaster={{ params: { Points: { threshold: pointThreshold }, Mesh: {}, Line: { threshold: 1 }, LOD: {}, Sprite: {} } }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 1)}
       >

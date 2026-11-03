@@ -16,7 +16,9 @@ const fixMinus = (s: string) => s.replace(/-/g, MINUS);
 
 export function fmtNum(x: number | null | undefined, digits = 2): string {
   if (x == null || !Number.isFinite(x)) return '—';
-  return fixMinus(nf(digits, digits).format(x));
+  const s = nf(digits, digits).format(x);
+  // never print a signed zero ("−0.0")
+  return /^-0(\.0+)?$/.test(s) ? s.slice(1) : fixMinus(s);
 }
 
 /** Signed number: +1.24 / −1.24 / 0.00 */

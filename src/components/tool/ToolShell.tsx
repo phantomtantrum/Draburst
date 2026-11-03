@@ -81,7 +81,7 @@ export function ToolShell({
 
 export function Panel({ index, title, children, aside, className }: { index?: string; title: string; children: ReactNode; aside?: ReactNode; className?: string }) {
   return (
-    <section className={cn('border-t border-rule-strong pt-4', className)} aria-label={title}>
+    <section className={cn('min-w-0 border-t border-rule-strong pt-4', className)} aria-label={title}>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         {index ? <SectionLabel index={index} title={title} as="h2" /> : <h2 className="label text-fg">{title}</h2>}
         {aside}

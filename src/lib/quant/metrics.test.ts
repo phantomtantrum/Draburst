@@ -99,3 +99,14 @@ describe('metrics — hand-computed', () => {
     expect(beta(b, b)).toBeCloseTo(1, 14);
   });
 });
+
+import { fmtNum, fmtPct, fmtSigned } from '@/lib/format';
+describe('format', () => {
+  it('uses U+2212 minus and never prints −0', () => {
+    expect(fmtNum(-1.5, 1)).toBe('−1.5');
+    expect(fmtNum(-0.00001, 1)).toBe('0.0');
+    expect(fmtPct(-0.0000001, 1)).toBe('0.0%');
+    expect(fmtSigned(0.012, 2)).toBe('+0.01');
+    expect(fmtSigned(-0.0001, 2)).toBe('0.00');
+  });
+});

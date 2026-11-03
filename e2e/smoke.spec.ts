@@ -53,3 +53,25 @@ test('monte carlo: methodology drawer opens and closes with Escape', async ({ pa
   await page.keyboard.press('Escape');
   await expect(dlg).toBeHidden();
 });
+
+test('portfolio: optimizes, shows all portfolios, URL-driven assets', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/tools/portfolio?as=crypto:BTC,crypto:ETH,crypto:SOL,stock:SPY&nr=1000');
+  await expect(page.getByRole('heading', { name: 'Portfolio', level: 1 })).toBeVisible();
+  for (const k of ['minvar', 'maxsharpe', 'equal']) await expect(page.locator(`[data-metric="${k}"] dd`)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/ALIGNED ON/)).toBeVisible();
+  const toggle = page.getByRole('button', { name: 'Controls' });
+  if (await toggle.isVisible()) await toggle.click();
+  await page.getByRole('button', { name: 'Remove SOL' }).click();
+  await expect(page).toHaveURL(/as=crypto%3ABTC%2Ccrypto%3AETH%2Cstock%3ASPY|as=crypto:BTC,crypto:ETH,stock:SPY/);
+  expect(errors).toEqual([]);
+});
+
+for (const path of ['/', '/tools/monte-carlo?n=500', '/tools/portfolio?nr=500']) {
+  test(`no horizontal scroll: ${path}`, async ({ page }) => {
+    await page.goto(path);
+    await page.waitForTimeout(1500);
+    const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+    expect(sw).toBeLessThanOrEqual(cw + 1);
+  });
+}
