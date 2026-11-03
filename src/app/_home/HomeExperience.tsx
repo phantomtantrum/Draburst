@@ -278,7 +278,7 @@ function TickerStrip({
       <span className="num text-[13px] text-fg">{r.symbol}</span>
       <span className="num text-[13px] text-body">{fmtPrice(r.price)}</span>
       <Delta value={r.change} className="text-[12px]" />
-      <span className="label text-subtle">{r.live ? '24H' : r.cls === 'stock' ? 'EOD' : '1D'}</span>
+      <span className="label text-muted">{r.live ? '24H' : r.cls === 'stock' ? 'EOD' : '1D'}</span>
     </span>
   ));
   return (

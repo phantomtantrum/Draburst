@@ -24,7 +24,8 @@ import { estimateGbm } from '@/lib/quant/montecarlo';
 import { logReturns, periodsPerYear } from '@/lib/quant/returns';
 import { parseSeed, randomSeed } from '@/lib/quant/prng';
 import { useMonteCarlo } from '@/lib/hooks/useMonteCarlo';
-import { useStageMode } from '@/lib/hooks/useMedia';
+import { useStage } from '@/lib/hooks/useMedia';
+import { NoStage } from '@/components/tool/NoStage';
 import { fmtDate, fmtInt, fmtNum, fmtPct, fmtPrice, fmtSeed } from '@/lib/format';
 
 const McStage = dynamic(() => import('./McStage'), {
@@ -55,7 +56,7 @@ export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' });
   const [reloadKey, setReloadKey] = useState(0);
   const { state, run } = useMonteCarlo();
-  const mode = useStageMode();
+  const { mode, software, forceStatic } = useStage();
   const [seedText, setSeedText] = useState(fmtSeed(q.sd));
   // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror URL seed into the text buffer
   useEffect(() => setSeedText(fmtSeed(q.sd)), [q.sd]);
@@ -206,7 +207,7 @@ export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
     ) : !hist ? (
       <StagePlaceholder text={`LOADING ${assetLabel} DAILY BARS…`} />
     ) : mode === 'none' ? (
-      <StagePlaceholder text="WEBGL UNAVAILABLE — SHOWING 2D CHARTS BELOW" />
+      <NoStage software={software} onForce={forceStatic} />
     ) : mode == null ? (
       <StagePlaceholder text="" />
     ) : (
@@ -242,9 +243,7 @@ export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
 
   return (
     <ToolShell
-      index="01"
       title="Monte Carlo"
-      subtitle="Thousands of possible futures from today's price. GBM with estimated drift and volatility, or a block bootstrap of the asset's own history."
       meta={meta}
       controls={controls}
       stage={stage}

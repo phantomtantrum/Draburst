@@ -96,7 +96,7 @@ export function DashboardClient() {
           </div>
           {shown.length === 0 ? (
             <div className="mt-10 border border-rule p-8">
-              <pre className="num text-[11px] leading-tight text-subtle" aria-hidden>
+              <pre className="num text-[11px] leading-tight text-muted" aria-hidden>
                 {'  .:-=+*#%@@%#*+=-:.  \n .:-=+*#%@@@@%#*+=-:. \n  .:-=+*#%@@%#*+=-:.  '}
               </pre>
               <p className="mt-4 text-[15px] text-body">Nothing saved yet.</p>
@@ -128,7 +128,7 @@ export function DashboardClient() {
                     ) : (
                       <p className="truncate text-[15px] text-fg">{r.name}</p>
                     )}
-                    <p className="label num mt-0.5 text-subtle">{new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ')}Z</p>
+                    <p className="label num mt-0.5 text-muted">{new Date(r.created_at).toISOString().slice(0, 16).replace('T', ' ')}Z</p>
                   </div>
                   <span className="label text-muted">{TOOL_LABEL[r.tool]}</span>
                   <span className="num truncate text-[12px] text-body">

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { ToolHeader } from '@/components/tool/ToolHeader';
+import { ToolSkeleton } from '@/components/tool/ToolSkeleton';
 import { MonteCarloTool } from './MonteCarloTool';
 import { McMethodology } from './methodology';
 
@@ -10,17 +12,12 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Suspense fallback={<ToolSkeleton />}>
+    <>
+      <ToolHeader index="01" title="Monte Carlo" subtitle="Thousands of possible futures from today's price. GBM with estimated drift and volatility, or a block bootstrap of the asset's own history." />
+      <Suspense fallback={<ToolSkeleton />}>
       <MonteCarloTool methodology={<McMethodology />} />
-    </Suspense>
+      </Suspense>
+    </>
   );
 }
 
-function ToolSkeleton() {
-  return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 lg:px-6">
-      <p className="label text-muted">01 / MONTE CARLO</p>
-      <div className="mt-3 h-[min(72svh,640px)] border border-rule" aria-busy="true" />
-    </div>
-  );
-}

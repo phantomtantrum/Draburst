@@ -113,3 +113,14 @@ test('explain API refuses cleanly without keys (never calls the model)', async (
   expect(res.status()).toBe(503);
   expect((await res.json()).error.code).toBe('NOT_CONFIGURED');
 });
+
+test('3D stage: CPU-only WebGL defaults to 2D, opt-in renders the canvas without errors', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/tools/monte-carlo?n=500&h=60');
+  const force = page.getByRole('button', { name: 'Render 3D anyway (slow)' });
+  await expect(force).toBeVisible({ timeout: 30_000 });
+  await force.click();
+  await expect(page.locator('canvas[role="img"]')).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(1500);
+  expect(errors).toEqual([]);
+});

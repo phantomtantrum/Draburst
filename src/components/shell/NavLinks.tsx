@@ -35,7 +35,7 @@ export function NavLinks() {
               active ? 'text-fg' : 'text-muted hover:text-fg',
             )}
           >
-            <span className="num text-subtle" aria-hidden>
+            <span className="num text-muted" aria-hidden>
               {n.idx}
             </span>
             <span className={cn(active && !mobile && 'underline decoration-1 underline-offset-[6px]')}>{n.label}</span>

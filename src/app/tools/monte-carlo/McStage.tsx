@@ -62,7 +62,8 @@ export default function McStage({
         />
       }
     >
-      <McFan3D display={display} s0={s0} target={target} bands={summary?.bands} grid={summary?.grid} histogram={summary?.histogram} scale={scale} />
+      {/* static mode (reduced motion / low-end GPU): render once, when the run is complete */}
+      <McFan3D display={mode === 'static' && !summary ? null : display} s0={s0} target={target} bands={summary?.bands} grid={summary?.grid} histogram={summary?.histogram} scale={scale} />
     </Stage>
   );
 }

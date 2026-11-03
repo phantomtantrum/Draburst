@@ -26,7 +26,8 @@ import { PRESETS, PRESET_BY_KIND, paramDefaults, type PresetKind } from '@/lib/q
 import { periodsPerYear } from '@/lib/quant/returns';
 import { useWorkerTask, latest } from '@/lib/hooks/useWorkerTask';
 import { useMultiBars } from '@/lib/hooks/useMultiBars';
-import { useStageMode } from '@/lib/hooks/useMedia';
+import { useStage } from '@/lib/hooks/useMedia';
+import { NoStage } from '@/components/tool/NoStage';
 import { parseAsNumMap } from '@/lib/url/parsers';
 import { ToolActions } from '@/components/tool/ToolActions';
 import type { BacktestWorkerApi, SweepRequest, SweepResult } from '@/workers/backtest.worker';
@@ -63,7 +64,7 @@ type Loaded = { status: 'loading' } | { status: 'error'; code: string; message: 
 
 export function BacktestTool({ methodology }: { methodology: ReactNode }) {
   const [q, setQ] = useQueryStates(btSearchParams, { history: 'replace', throttleMs: 250 });
-  const mode = useStageMode();
+  const { mode, software, forceStatic } = useStage();
   const preset = PRESET_BY_KIND[q.st];
   const isRebal = q.st === 'rebal';
   const params = useMemo(() => ({ ...paramDefaults(q.st), ...q.p }), [q.st, q.p]);
@@ -252,25 +253,11 @@ export function BacktestTool({ methodology }: { methodology: ReactNode }) {
     ) : invalid ? (
       <StagePlaceholder text="FIX STRATEGY PARAMETERS" />
     ) : mode === 'none' ? (
-      <StagePlaceholder text="WEBGL UNAVAILABLE — SHOWING 2D CHARTS BELOW" />
+      <NoStage software={software} onForce={forceStatic} />
     ) : mode == null || (!resultFresh && q.v === 'ribbon') ? (
       <StagePlaceholder text={bt.state.status === 'error' ? `! ${bt.state.message}` : 'BACKTESTING…'} />
     ) : (
       <div>
-        {sweepAxes && single && (
-          <div className="mb-2 flex justify-end">
-            <Segmented
-              label="3D view"
-              hideLabel
-              value={q.v}
-              onChange={(v) => setQ({ v })}
-              options={[
-                { value: 'ribbon', label: 'Equity ribbon' },
-                { value: 'sweep', label: `Sweep ${labelOf(sweepAxes.x)} × ${labelOf(sweepAxes.y)}` },
-              ]}
-            />
-          </div>
-        )}
         {q.v === 'sweep' && !sweepFresh ? (
           <StagePlaceholder text={sw.state.status === 'error' ? `! ${sw.state.message}` : `SWEEPING ${q.gn}×${q.gn} PARAMETER GRID…`} />
         ) : (
@@ -289,6 +276,20 @@ export function BacktestTool({ methodology }: { methodology: ReactNode }) {
         )}
       </div>
     );
+
+  const stageBar =
+    sweepAxes && single ? (
+      <Segmented
+        label="3D view"
+        hideLabel
+        value={q.v}
+        onChange={(v) => setQ({ v })}
+        options={[
+          { value: 'ribbon', label: 'Equity ribbon' },
+          { value: 'sweep', label: `Sweep ${labelOf(sweepAxes.x)} × ${labelOf(sweepAxes.y)}` },
+        ]}
+      />
+    ) : null;
 
   const meta =
     !isRebal && loaded.status === 'ok' ? (
@@ -310,12 +311,11 @@ export function BacktestTool({ methodology }: { methodology: ReactNode }) {
 
   return (
     <ToolShell
-      index="03"
       title="Backtest"
-      subtitle="Parameterized strategies with no look-ahead: decisions on the close, fills on the next open, real costs. Sweep two parameters to see how fragile the edge is."
       meta={meta}
       controls={controls}
       stage={stage}
+      stageBar={stageBar}
       methodology={methodology}
       methodologyTitle="Methodology — Backtester"
       actions={

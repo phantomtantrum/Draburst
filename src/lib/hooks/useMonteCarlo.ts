@@ -60,7 +60,7 @@ export function useMonteCarlo() {
             display = { paths, terminal, count: (prev?.count ?? 0) + b.displayCount, G: prev?.G ?? G };
           }
           const now = performance.now();
-          if (now - lastPaint > 60 || b.pathsDone === params.nPaths) {
+          if (now - lastPaint > 200 || b.pathsDone === params.nPaths) {
             lastPaint = now;
             setState({ status: 'running', done: b.pathsDone, total: params.nPaths, display });
           }

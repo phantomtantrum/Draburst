@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { ToolHeader } from '@/components/tool/ToolHeader';
+import { ToolSkeleton } from '@/components/tool/ToolSkeleton';
 import { PortfolioTool } from './PortfolioTool';
 import { PortfolioMethodology } from './methodology';
 
@@ -10,8 +12,11 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="mx-auto h-screen max-w-[1600px] px-4 py-6 lg:px-6" aria-busy="true" />}>
+    <>
+      <ToolHeader index="02" title="Portfolio" subtitle="Efficient frontier across crypto and equities on one aligned calendar: minimum variance, maximum Sharpe, equal weight and your own mix." />
+      <Suspense fallback={<ToolSkeleton stageBar />}>
       <PortfolioTool methodology={<PortfolioMethodology />} />
-    </Suspense>
+      </Suspense>
+    </>
   );
 }

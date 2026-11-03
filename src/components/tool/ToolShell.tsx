@@ -2,8 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 import { BookOpen, SlidersHorizontal, X } from 'lucide-react';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Disclaimer } from '@/components/ui/Disclaimer';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -14,10 +14,9 @@ import { cn } from '@/lib/cn';
  * <1024: stage on top, controls in a toggleable sheet.
  */
 export function ToolShell({
-  index,
   title,
-  subtitle,
   meta,
+  stageBar,
   controls,
   stage,
   children,
@@ -25,10 +24,11 @@ export function ToolShell({
   methodologyTitle,
   actions,
 }: {
-  index: string;
+  /** used for landmarks; the visible title is server-rendered by ToolHeader */
   title: string;
-  subtitle: string;
   meta?: ReactNode;
+  /** optional bar above the stage (view toggles); its height is reserved when defined */
+  stageBar?: ReactNode;
   controls: ReactNode;
   stage: ReactNode;
   children?: ReactNode;
@@ -40,23 +40,19 @@ export function ToolShell({
   const [sheet, setSheet] = useState(false);
   return (
     <div className="mx-auto max-w-[1600px] px-4 lg:px-6">
-      <header className="flex flex-col gap-4 border-b border-rule py-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <SectionLabel index={index} title={title} />
-          <h1 className="display-l mt-3">{title}</h1>
-          <p className="mt-3 max-w-2xl text-[15px] text-muted">{subtitle}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {actions}
-          <Button variant="secondary" size="sm" onClick={() => setDrawer(true)}>
-            <BookOpen size={14} strokeWidth={1.5} aria-hidden /> Methodology
-          </Button>
-          <Button variant="secondary" size="sm" className="lg:hidden" aria-expanded={sheet} aria-controls="tool-controls" onClick={() => setSheet((s) => !s)}>
-            {sheet ? <X size={14} strokeWidth={1.5} aria-hidden /> : <SlidersHorizontal size={14} strokeWidth={1.5} aria-hidden />} Controls
-          </Button>
-        </div>
-      </header>
-      {meta && <div className="border-b border-rule py-2">{meta}</div>}
+      <div className="flex min-h-[52px] flex-wrap items-center justify-end gap-2 border-b border-rule py-2">
+        {actions}
+        <Button variant="secondary" size="sm" onClick={() => setDrawer(true)}>
+          <BookOpen size={14} strokeWidth={1.5} aria-hidden /> Methodology
+        </Button>
+        <Button variant="secondary" size="sm" className="lg:hidden" aria-expanded={sheet} aria-controls="tool-controls" onClick={() => setSheet((s) => !s)}>
+          {sheet ? <X size={14} strokeWidth={1.5} aria-hidden /> : <SlidersHorizontal size={14} strokeWidth={1.5} aria-hidden />} Controls
+        </Button>
+      </div>
+      {/* reserved height: metadata arrives with the data, without shifting the stage */}
+      <div className="h-[37px] overflow-x-auto overflow-y-hidden border-b border-rule py-2 whitespace-nowrap [&>*]:w-max [&>*]:min-w-full [&>*]:flex-nowrap [&_*]:flex-nowrap">
+        {meta}
+      </div>
       <div className="grid gap-0 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside
           id="tool-controls"
@@ -68,7 +64,10 @@ export function ToolShell({
         >
           <div className="flex flex-col gap-5 lg:sticky lg:top-16">{controls}</div>
         </aside>
-        <div className="order-1 min-w-0 lg:order-2 lg:pl-6">{stage}</div>
+        <div className="order-1 min-w-0 pt-2 lg:order-2 lg:pl-6">
+          {stageBar !== undefined && <div className="mb-2 flex min-h-[34px] justify-end">{stageBar}</div>}
+          {stage}
+        </div>
       </div>
       <div className="mt-6 flex flex-col gap-10">{children}</div>
       <Disclaimer className="mt-10 border-t border-rule pt-4" />

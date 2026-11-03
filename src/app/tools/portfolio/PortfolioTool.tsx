@@ -20,7 +20,8 @@ import { CorrHeatmap } from '@/components/charts/CorrHeatmap';
 import { WeightBar } from '@/components/charts/WeightBar';
 import { useMultiBars } from '@/lib/hooks/useMultiBars';
 import { useWorkerTask, latest } from '@/lib/hooks/useWorkerTask';
-import { useStageMode } from '@/lib/hooks/useMedia';
+import { useStage } from '@/lib/hooks/useMedia';
+import { NoStage } from '@/components/tool/NoStage';
 import { alignSeries } from '@/lib/market/align';
 import { periodsPerYear } from '@/lib/quant/returns';
 import type { PortfolioInput, PortfolioOutput } from '@/lib/quant/portfolio';
@@ -60,7 +61,7 @@ export function PortfolioTool({ methodology }: { methodology: ReactNode }) {
   const ids = useMemo(() => Array.from(new Set(q.as)).slice(0, 20), [q.as]);
   const [reload, setReload] = useState(0);
   const bars = useMultiBars(ids, Math.min(15, Math.max(1, q.lb)), reload);
-  const mode = useStageMode();
+  const { mode, software, forceStatic } = useStage();
   const [adding, setAdding] = useState(false);
   const longOnly = q.long === '1';
   const globalLo = longOnly ? Math.max(0, q.lo) : q.lo;
@@ -211,25 +212,23 @@ export function PortfolioTool({ methodology }: { methodology: ReactNode }) {
   ) : !outFresh ? (
     <StagePlaceholder text={task.state.status === 'error' ? `! ${task.state.message}` : 'OPTIMIZING…'} />
   ) : mode === 'none' ? (
-    <StagePlaceholder text="WEBGL UNAVAILABLE — SHOWING 2D CHARTS BELOW" />
+    <NoStage software={software} onForce={forceStatic} />
   ) : mode == null ? (
     <StagePlaceholder text="" />
   ) : (
-    <div>
-      <div className="mb-2 flex justify-end">
-        <Segmented
-          label="3D view"
-          hideLabel
-          value={q.v}
-          onChange={(v) => setQ({ v })}
-          options={[
-            { value: 'cloud', label: 'Risk × Return × Sharpe' },
-            { value: 'corr', label: 'Correlation field' },
-          ]}
-        />
-      </div>
-      <PortfolioStage mode={mode} out={outFresh} symbols={symbols} view={q.v} />
-    </div>
+    <PortfolioStage mode={mode} out={outFresh} symbols={symbols} view={q.v} />
+  );
+  const stageBar = (
+    <Segmented
+      label="3D view"
+      hideLabel
+      value={q.v}
+      onChange={(v) => setQ({ v })}
+      options={[
+        { value: 'cloud', label: 'Risk × Return × Sharpe' },
+        { value: 'corr', label: 'Correlation field' },
+      ]}
+    />
   );
 
   const meta = aligned ? (
@@ -249,12 +248,11 @@ export function PortfolioTool({ methodology }: { methodology: ReactNode }) {
 
   return (
     <ToolShell
-      index="02"
       title="Portfolio"
-      subtitle="Efficient frontier across crypto and equities on one aligned calendar: minimum variance, maximum Sharpe, equal weight and your own mix."
       meta={meta}
       controls={controls}
       stage={stage}
+      stageBar={stageBar}
       methodology={methodology}
       methodologyTitle="Methodology — Portfolio optimizer"
       actions={
