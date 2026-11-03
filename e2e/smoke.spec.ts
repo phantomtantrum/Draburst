@@ -120,7 +120,10 @@ test('3D stage: CPU-only WebGL defaults to 2D, opt-in renders the canvas without
   const force = page.getByRole('button', { name: 'Render 3D anyway (slow)' });
   await expect(force).toBeVisible({ timeout: 30_000 });
   await force.click();
-  await expect(page.locator('canvas[role="img"]')).toBeVisible({ timeout: 30_000 });
+  // R3F puts role/aria-label on the canvas wrapper
+  const stage = page.getByRole('img', { name: /3D Monte Carlo fan/ });
+  await expect(stage).toBeVisible({ timeout: 30_000 });
+  await expect(stage.locator('canvas')).toBeVisible();
   await page.waitForTimeout(1500);
   expect(errors).toEqual([]);
 });
