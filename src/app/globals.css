@@ -222,3 +222,16 @@
   color: var(--fg);
   font-size: 1.05em;
 }
+
+/* ── Ticker marquee (mechanical, linear) ── */
+@keyframes qp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.qp-marquee {
+  animation: qp-marquee 60s linear infinite;
+}

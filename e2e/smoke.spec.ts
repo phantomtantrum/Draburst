@@ -4,8 +4,9 @@ function trackErrors(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
-    // 404s for not-yet-visited prefetch targets are not app errors
-    if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text());
+    // 404s for not-yet-built prefetch targets, and the Binance socket when the
+    // test environment has no outbound network, are not app errors
+    if (m.type() === 'error' && !/Failed to load resource|WebSocket connection/.test(m.text())) errors.push(m.text());
   });
   return errors;
 }
