@@ -95,3 +95,15 @@ test('backtest: monthly-rebalanced portfolio from URL weights', async ({ page })
   await expect(page.getByText(/MONTHLY REBALANCE/)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('table', { name: 'Strategy and benchmark metrics' })).toBeVisible({ timeout: 30_000 });
 });
+
+test('accounts: login + dashboard show a clear not-configured state without Supabase keys', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible();
+  await expect(page.getByText('Accounts not configured')).toBeVisible();
+  await page.goto('/dashboard');
+  await expect(page.getByText('Accounts not configured')).toBeVisible();
+  await page.goto('/tools/monte-carlo?n=500');
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+  expect(errors).toEqual([]);
+});

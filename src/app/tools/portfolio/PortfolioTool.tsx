@@ -29,6 +29,7 @@ import { fmtInt, fmtNum, fmtPct, fmtSeed } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { StagePlaceholder } from '../monte-carlo/MonteCarloTool';
 import { parseAsNumMap } from '@/lib/url/parsers';
+import { ToolActions } from '@/components/tool/ToolActions';
 
 const PortfolioStage = dynamic(() => import('./PortfolioStage'), { ssr: false, loading: () => <StagePlaceholder text="LOADING 3D STAGE…" /> });
 
@@ -54,7 +55,7 @@ const LABEL = { minvar: 'MIN-VAR', maxsharpe: 'MAX-SHARPE', equal: 'EQUAL', cust
 const GLYPH = { minvar: 'square', maxsharpe: 'disc', equal: 'diamond', custom: 'ring' } as const;
 const GLYPH_CHAR = { minvar: '■', maxsharpe: '●', equal: '◆', custom: '○' } as const;
 
-export function PortfolioTool({ methodology, actions }: { methodology: ReactNode; actions?: ReactNode }) {
+export function PortfolioTool({ methodology }: { methodology: ReactNode }) {
   const [q, setQ] = useQueryStates(pfSearchParams, { history: 'replace', throttleMs: 250 });
   const ids = useMemo(() => Array.from(new Set(q.as)).slice(0, 20), [q.as]);
   const [reload, setReload] = useState(0);
@@ -256,7 +257,24 @@ export function PortfolioTool({ methodology, actions }: { methodology: ReactNode
       stage={stage}
       methodology={methodology}
       methodologyTitle="Methodology — Portfolio optimizer"
-      actions={actions}
+      actions={
+        <ToolActions
+          tool="portfolio"
+          defaultName={`${symbols.join(' · ')} · ${q.est === 'lw' ? 'LW' : 'Sample'}`}
+          seed={q.sd}
+          summary={
+            outFresh
+              ? {
+                  assets: symbols.join(','),
+                  max_sharpe: Number(outFresh.portfolios[1]!.sharpe.toFixed(3)),
+                  ret: Number(outFresh.portfolios[1]!.ret.toFixed(4)),
+                  vol: Number(outFresh.portfolios[1]!.vol.toFixed(4)),
+                  minvar_vol: Number(outFresh.portfolios[0]!.vol.toFixed(4)),
+                }
+              : null
+          }
+        />
+      }
     >
       {outFresh && aligned && (
         <>

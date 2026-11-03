@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "db:test": "bash scripts/test-db.sh",
     "reference": "python3 scripts/reference/gen_quant_reference.py",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
@@ -23,6 +24,8 @@
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
     "@react-three/postprocessing": "3.2.2",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
     "comlink": "4.4.2",
     "d3-array": "3.2.5",
     "d3-scale": "4.0.3",

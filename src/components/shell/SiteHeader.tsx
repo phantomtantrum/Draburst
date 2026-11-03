@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { NavLinks } from './NavLinks';
 import { UtcClock } from './UtcClock';
+import { AuthBadge } from './AuthBadge';
 
 export function SiteHeader() {
   return (
@@ -14,6 +15,7 @@ export function SiteHeader() {
         </Link>
         <div className="flex items-center gap-2">
           <NavLinks />
+          <AuthBadge />
           <UtcClock className="label hidden border-l border-rule pl-3 text-muted xl:inline" />
         </div>
       </div>

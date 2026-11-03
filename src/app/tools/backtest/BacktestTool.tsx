@@ -28,6 +28,7 @@ import { useWorkerTask, latest } from '@/lib/hooks/useWorkerTask';
 import { useMultiBars } from '@/lib/hooks/useMultiBars';
 import { useStageMode } from '@/lib/hooks/useMedia';
 import { parseAsNumMap } from '@/lib/url/parsers';
+import { ToolActions } from '@/components/tool/ToolActions';
 import type { BacktestWorkerApi, SweepRequest, SweepResult } from '@/workers/backtest.worker';
 import { fmtDate, fmtInt, fmtNum, fmtPct, fmtPrice } from '@/lib/format';
 import { ErrorState, StagePlaceholder } from '../monte-carlo/MonteCarloTool';
@@ -60,7 +61,7 @@ const toBars = (s: BarSeries): Bar[] => s.t.map((t, i) => ({ t, o: s.o[i]!, h: s
 
 type Loaded = { status: 'loading' } | { status: 'error'; code: string; message: string; retryAfter?: number } | { status: 'ok'; data: BarsResponse };
 
-export function BacktestTool({ methodology, actions }: { methodology: ReactNode; actions?: ReactNode }) {
+export function BacktestTool({ methodology }: { methodology: ReactNode }) {
   const [q, setQ] = useQueryStates(btSearchParams, { history: 'replace', throttleMs: 250 });
   const mode = useStageMode();
   const preset = PRESET_BY_KIND[q.st];
@@ -317,7 +318,25 @@ export function BacktestTool({ methodology, actions }: { methodology: ReactNode;
       stage={stage}
       methodology={methodology}
       methodologyTitle="Methodology — Backtester"
-      actions={actions}
+      actions={
+        <ToolActions
+          tool="backtest"
+          defaultName={`${isRebal ? 'Portfolio' : q.a.split(':')[1]} · ${preset.label}`}
+          seed={null}
+          summary={
+            resultFresh
+              ? {
+                  asset: isRebal ? pwIds.map((id) => id.split(':')[1]).join(',') : (q.a.split(':')[1] ?? ''),
+                  strategy: preset.label,
+                  cagr: Number(resultFresh.metrics.cagr.toFixed(4)),
+                  sharpe: Number(resultFresh.metrics.sharpe.toFixed(3)),
+                  mdd: Number(resultFresh.metrics.maxDrawdown.toFixed(4)),
+                  trades: resultFresh.metrics.trades,
+                }
+              : null
+          }
+        />
+      }
     >
       {resultFresh && (
         <>

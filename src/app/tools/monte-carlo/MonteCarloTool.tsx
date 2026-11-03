@@ -16,6 +16,7 @@ import { Button, IconButton } from '@/components/ui/Button';
 import { MetricList, DataTable } from '@/components/ui/DataTable';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { TextInput } from '@/components/ui/Field';
+import { ToolActions } from '@/components/tool/ToolActions';
 import { Sym, ST, S0 } from '@/components/ui/Sym';
 import { fetchBars, MarketClientError } from '@/lib/market/client';
 import type { BarsResponse } from '@/lib/market/types';
@@ -49,7 +50,7 @@ export const mcSearchParams = {
 
 type Loaded = { status: 'loading' } | { status: 'error'; code: string; message: string; retryAfter?: number } | { status: 'ok'; data: BarsResponse };
 
-export function MonteCarloTool({ methodology, actions }: { methodology: ReactNode; actions?: ReactNode }) {
+export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
   const [q, setQ] = useQueryStates(mcSearchParams, { history: 'replace', throttleMs: 200 });
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' });
   const [reloadKey, setReloadKey] = useState(0);
@@ -249,7 +250,26 @@ export function MonteCarloTool({ methodology, actions }: { methodology: ReactNod
       stage={stage}
       methodology={methodology}
       methodologyTitle="Methodology — Monte Carlo"
-      actions={actions}
+      actions={
+        <ToolActions
+          tool="monte-carlo"
+          defaultName={`${assetLabel} · ${q.m === 'gbm' ? 'GBM' : 'Bootstrap'} · T+${horizon}`}
+          seed={q.sd}
+          summary={
+            summary && hist
+              ? {
+                  asset: assetLabel ?? '',
+                  model: q.m,
+                  paths: nPaths,
+                  horizon,
+                  median: Number(summary.terminal.median.toPrecision(6)),
+                  p_above_target: Number((summary.terminal.probAboveTarget ?? 0).toFixed(4)),
+                  var95: Number(summary.risk.var95.toFixed(4)),
+                }
+              : null
+          }
+        />
+      }
     >
       <div aria-live="polite" className="sr-only">
         {summary && hist
