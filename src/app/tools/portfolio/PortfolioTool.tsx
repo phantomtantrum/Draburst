@@ -260,6 +260,43 @@ export function PortfolioTool({ methodology }: { methodology: ReactNode }) {
       actions={
         <ToolActions
           tool="portfolio"
+          explain={
+            outFresh && aligned
+              ? {
+                  inputs: {
+                    assets: symbols.join(','),
+                    lookback_years: q.lb,
+                    aligned_observations: outFresh.observations,
+                    periods_per_year: aligned.ppy,
+                    mixed_calendar: aligned.mixed,
+                    risk_free: q.rf,
+                    covariance: q.est === 'lw' ? 'Ledoit-Wolf' : 'sample',
+                    lw_shrinkage: outFresh.shrinkage,
+                    long_only: longOnly,
+                    min_weight: globalLo,
+                    max_weight: q.hi,
+                  },
+                  metrics: Object.fromEntries(
+                    outFresh.portfolios.flatMap((p) => [
+                      [`${p.key}_sharpe`, Number(p.sharpe.toFixed(3))],
+                      [`${p.key}_return`, Number(p.ret.toFixed(4))],
+                      [`${p.key}_vol`, Number(p.vol.toFixed(4))],
+                      [
+                        `${p.key}_weights`,
+                        symbols
+                          .map((s, i) => [s, p.weights[i]!] as const)
+                          .filter(([, w]) => Math.abs(w) >= 0.005)
+                          .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+                          .slice(0, 8)
+                          .map(([s, w]) => `${s} ${(w * 100).toFixed(0)}%`)
+                          .join(', ')
+                          .slice(0, 120),
+                      ],
+                    ]),
+                  ),
+                }
+              : null
+          }
           defaultName={`${symbols.join(' · ')} · ${q.est === 'lw' ? 'LW' : 'Sample'}`}
           seed={q.sd}
           summary={

@@ -20,6 +20,7 @@
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.4.0",
     "@gsap/react": "2.1.2",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",

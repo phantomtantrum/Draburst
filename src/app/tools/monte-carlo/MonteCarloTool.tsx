@@ -253,6 +253,39 @@ export function MonteCarloTool({ methodology }: { methodology: ReactNode }) {
       actions={
         <ToolActions
           tool="monte-carlo"
+          explain={
+            summary && hist
+              ? {
+                  inputs: {
+                    asset: assetLabel ?? '',
+                    model: q.m === 'gbm' ? 'GBM' : `block bootstrap (b=${block})`,
+                    lookback_years: q.lb,
+                    history_bars: hist.n,
+                    horizon_periods: horizon,
+                    periods_per_year: hist.ppy,
+                    paths: nPaths,
+                    start_price: hist.s0,
+                    mu_annual: q.m === 'gbm' ? mu : null,
+                    sigma_annual: q.m === 'gbm' ? sigma : hist.est.sigma,
+                    mu_user_edited: q.mu != null,
+                    target_price: target,
+                  },
+                  metrics: {
+                    median_terminal: summary.terminal.median,
+                    mean_terminal: summary.terminal.mean,
+                    p5_terminal: summary.terminal.p.p5 ?? null,
+                    p95_terminal: summary.terminal.p.p95 ?? null,
+                    prob_above_target: summary.terminal.probAboveTarget,
+                    prob_below_start: summary.terminal.probBelowStart,
+                    var95_horizon: summary.risk.var95,
+                    cvar95_horizon: summary.risk.cvar95,
+                    var99_horizon: summary.risk.var99,
+                    cvar99_horizon: summary.risk.cvar99,
+                    closed_form_median: summary.analytic?.median ?? null,
+                  },
+                }
+              : null
+          }
           defaultName={`${assetLabel} · ${q.m === 'gbm' ? 'GBM' : 'Bootstrap'} · T+${horizon}`}
           seed={q.sd}
           summary={

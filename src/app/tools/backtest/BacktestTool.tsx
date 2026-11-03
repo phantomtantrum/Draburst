@@ -321,6 +321,42 @@ export function BacktestTool({ methodology }: { methodology: ReactNode }) {
       actions={
         <ToolActions
           tool="backtest"
+          explain={
+            resultFresh
+              ? {
+                  inputs: {
+                    asset: isRebal ? pwIds.map((id) => `${id.split(':')[1]} ${((q.pw[id] ?? 0) * 100).toFixed(0)}%`).join(', ').slice(0, 120) : (q.a.split(':')[1] ?? ''),
+                    strategy: preset.label,
+                    parameters: Object.entries(params).map(([k, v]) => `${k}=${v}`).join(' ').slice(0, 120) || 'none',
+                    history_years: q.lb,
+                    bars: t.length,
+                    commission_bps: q.c,
+                    slippage_bps: q.sl,
+                    sizing: isRebal ? 'fixed weights, monthly rebalance' : q.sz === 'pct' ? `${(q.fr * 100).toFixed(0)}% of equity` : `vol target ${(q.vt * 100).toFixed(0)}%`,
+                    stop_loss: q.stop,
+                    execution: 'signal on close, fill next open',
+                    parameters_from_sweep_pick: sweepFresh != null,
+                  },
+                  metrics: {
+                    cagr: resultFresh.metrics.cagr,
+                    sharpe: resultFresh.metrics.sharpe,
+                    sortino: resultFresh.metrics.sortino,
+                    max_drawdown: resultFresh.metrics.maxDrawdown,
+                    calmar: resultFresh.metrics.calmar,
+                    vol: resultFresh.metrics.vol,
+                    trades: resultFresh.metrics.trades,
+                    win_rate: Number.isFinite(resultFresh.metrics.winRate) ? resultFresh.metrics.winRate : null,
+                    time_in_market: resultFresh.metrics.exposure,
+                    beta: resultFresh.metrics.beta,
+                    benchmark_cagr: resultFresh.benchmarkMetrics.cagr,
+                    benchmark_sharpe: resultFresh.benchmarkMetrics.sharpe,
+                    benchmark_max_drawdown: resultFresh.benchmarkMetrics.maxDrawdown,
+                    sweep_best_sharpe: sweepFresh ? Math.max(...Array.from(sweepFresh.sharpe).filter(Number.isFinite)) : null,
+                    sweep_cells: sweepFresh ? sweepFresh.xs.length * sweepFresh.ys.length : null,
+                  },
+                }
+              : null
+          }
           defaultName={`${isRebal ? 'Portfolio' : q.a.split(':')[1]} · ${preset.label}`}
           seed={null}
           summary={

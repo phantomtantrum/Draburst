@@ -107,3 +107,9 @@ test('accounts: login + dashboard show a clear not-configured state without Supa
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
   expect(errors).toEqual([]);
 });
+
+test('explain API refuses cleanly without keys (never calls the model)', async ({ request }) => {
+  const res = await request.post('/api/explain', { data: { tool: 'monte-carlo', inputs: {}, metrics: {} } });
+  expect(res.status()).toBe(503);
+  expect((await res.json()).error.code).toBe('NOT_CONFIGURED');
+});

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { getSupabase } from '@/lib/supabase/browser';
 import { useUser } from '@/lib/supabase/useUser';
 import type { ToolId } from '@/lib/supabase/config';
+import { ExplainButton, type ExplainPayload } from './ExplainButton';
 
 /**
  * Save the current tool state: the URL query (inputs) + summary metrics + seed.
@@ -18,12 +19,15 @@ export function ToolActions({
   summary,
   seed,
   extra,
+  explain,
 }: {
   tool: ToolId;
   defaultName: string;
   summary: Record<string, string | number | null> | null;
   seed: number | null;
   extra?: ReactNode;
+  /** compact inputs + metrics for the AI explanation (never raw series) */
+  explain?: ExplainPayload | null;
 }) {
   const auth = useUser();
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -47,6 +51,7 @@ export function ToolActions({
   return (
     <>
       {extra}
+      {explain !== undefined && <ExplainButton tool={tool} payload={explain} />}
       {auth.status === 'user' ? (
         <Button variant="secondary" size="sm" onClick={save} disabled={!summary || state === 'saving'} title={err ?? undefined}>
           {state === 'saved' ? <Check size={14} strokeWidth={1.5} aria-hidden /> : <Save size={14} strokeWidth={1.5} aria-hidden />}
