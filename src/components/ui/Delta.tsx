@@ -26,7 +26,7 @@ export function Delta({
   return (
     <span
       className={cn(
-        'num inline-flex items-baseline gap-1 whitespace-nowrap',
+        'num relative inline-flex items-baseline gap-1 whitespace-nowrap',
         s === 'pos' && 'text-fg',
         s === 'neg' && 'text-fg underline decoration-dashed decoration-1 underline-offset-4',
         s === 'zero' && 'text-muted',

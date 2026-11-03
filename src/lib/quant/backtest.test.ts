@@ -134,6 +134,25 @@ describe('monthly rebalance', () => {
   });
 });
 
+describe('rebalance allocation timing', () => {
+  it('invests at the open of bar 1, not at the first month boundary', () => {
+    // asset doubles in the first week of January
+    const a = Array.from({ length: 40 }, (_, i) => bar(i, i < 2 ? 100 : 200, i < 1 ? 100 : 200));
+    const b = Array.from({ length: 40 }, (_, i) => bar(i, 50, 50));
+    const r = backtestRebalance([a, b], { weights: [0.5, 0.5], commissionBps: 0, slippageBps: 0, initialCapital: 1000 });
+    // bought A at open(1)=100 → 5 units × 200 + 500 in B = 1500
+    expect(r.equity[5]).toBeCloseTo(1500, 9);
+  });
+  it("mode 'none' lets weights drift (no further trades)", () => {
+    const up = Array.from({ length: 70 }, (_, i) => bar(i, 100 * 1.01 ** i, 100 * 1.01 ** i));
+    const flat = Array.from({ length: 70 }, (_, i) => bar(i, 100, 100));
+    const drift = backtestRebalance([up, flat], { weights: [0.5, 0.5], commissionBps: 10, slippageBps: 0, initialCapital: 1000, mode: 'none' });
+    const monthly = backtestRebalance([up, flat], { weights: [0.5, 0.5], commissionBps: 10, slippageBps: 0, initialCapital: 1000 });
+    expect(drift.turnover).toBeCloseTo(1, 9); // only the initial buy
+    expect(monthly.turnover).toBeGreaterThan(1);
+  });
+});
+
 describe('parameter sweep', () => {
   it('fills valid cells, NaN for invalid (fast ≥ slow)', () => {
     const bs = randomBars(300, 12);

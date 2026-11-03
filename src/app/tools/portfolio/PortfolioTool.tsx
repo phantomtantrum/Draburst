@@ -3,7 +3,8 @@
 import { Sym } from '@/components/ui/Sym';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { createParser, parseAsArrayOf, parseAsFloat, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs';
+import Link from 'next/link';
+import { parseAsArrayOf, parseAsFloat, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs';
 import { X, Plus } from 'lucide-react';
 import { ToolShell, Panel } from '@/components/tool/ToolShell';
 import { AssetPicker } from '@/components/tool/AssetPicker';
@@ -27,26 +28,9 @@ import type { PortfolioWorkerApi } from '@/workers/portfolio.worker';
 import { fmtInt, fmtNum, fmtPct, fmtSeed } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { StagePlaceholder } from '../monte-carlo/MonteCarloTool';
+import { parseAsNumMap } from '@/lib/url/parsers';
 
 const PortfolioStage = dynamic(() => import('./PortfolioStage'), { ssr: false, loading: () => <StagePlaceholder text="LOADING 3D STAGE…" /> });
-
-/** Per-asset numbers in the URL: "crypto:BTC=0.1;stock:SPY=0.25" */
-const parseAsNumMap = createParser<Record<string, number>>({
-  parse: (s) => {
-    const out: Record<string, number> = {};
-    for (const part of s.split(';')) {
-      const [k, v] = part.split('=');
-      const n = Number(v);
-      if (k && Number.isFinite(n)) out[k] = n;
-    }
-    return out;
-  },
-  serialize: (m) =>
-    Object.entries(m)
-      .map(([k, v]) => `${k}=${Number(v.toFixed(4))}`)
-      .join(';'),
-  eq: (a, b) => JSON.stringify(a) === JSON.stringify(b),
-});
 
 const DEFAULT_ASSETS = ['crypto:BTC', 'crypto:ETH', 'crypto:SOL', 'crypto:BNB', 'crypto:XRP'];
 
@@ -282,7 +266,31 @@ export function PortfolioTool({ methodology, actions }: { methodology: ReactNode
           <Panel index="A" title="Efficient frontier" aside={<span className="label text-muted">ANNUALIZED · rf {fmtPct(q.rf, 2)}</span>}>
             <FrontierChart cloud={outFresh.cloud} frontier={outFresh.frontier} markers={markers} symbols={symbols} rf={q.rf} />
           </Panel>
-          <Panel index="B" title="Portfolios">
+          <Panel
+            index="B"
+            title="Portfolios"
+            aside={
+              <span className="flex flex-wrap gap-2">
+                {outFresh.portfolios
+                  .filter((p) => p.key !== 'equal')
+                  .map((p) => (
+                    <Link
+                      key={p.key}
+                      className="label border border-rule-strong px-2 py-1 text-fg hover:border-fg"
+                      href={`/tools/backtest?st=rebal&lb=${q.lb}&pw=${encodeURIComponent(
+                        assetIds
+                          .map((id, i) => [id, p.weights[i]!] as const)
+                          .filter(([, w]) => w > 0.0005)
+                          .map(([id, w]) => `${id}=${Number(w.toFixed(4))}`)
+                          .join(';'),
+                      )}`}
+                    >
+                      Backtest {LABEL[p.key]} →
+                    </Link>
+                  ))}
+              </span>
+            }
+          >
             <MetricList
               columns={4}
               items={outFresh.portfolios.map((p) => ({

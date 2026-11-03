@@ -67,7 +67,7 @@ test('portfolio: optimizes, shows all portfolios, URL-driven assets', async ({ p
   expect(errors).toEqual([]);
 });
 
-for (const path of ['/', '/tools/monte-carlo?n=500', '/tools/portfolio?nr=500']) {
+for (const path of ['/', '/tools/monte-carlo?n=500', '/tools/portfolio?nr=500', '/tools/backtest?lb=2']) {
   test(`no horizontal scroll: ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForTimeout(1500);
@@ -75,3 +75,22 @@ for (const path of ['/', '/tools/monte-carlo?n=500', '/tools/portfolio?nr=500'])
     expect(sw).toBeLessThanOrEqual(cw + 1);
   });
 }
+
+test('backtest: runs preset, sweep cell loads params into URL', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/tools/backtest?a=crypto:ETH&lb=3&gn=8&v=sweep');
+  await expect(page.getByRole('heading', { name: 'Backtest', level: 1 })).toBeVisible();
+  await expect(page.getByText('SIGNAL @ CLOSE(t) → FILL @ OPEN(t+1)', { exact: false }).first()).toBeAttached();
+  await expect(page.getByRole('table', { name: 'Strategy and benchmark metrics' })).toBeVisible({ timeout: 30_000 });
+  const cell = page.getByRole('gridcell', { name: /FAST MA 16, SLOW MA .*Sharpe [−-]?\d/ }).first();
+  await expect(cell).toBeVisible({ timeout: 30_000 });
+  await cell.click();
+  await expect(page).toHaveURL(/p=f%3D16|p=f=16/);
+  expect(errors).toEqual([]);
+});
+
+test('backtest: monthly-rebalanced portfolio from URL weights', async ({ page }) => {
+  await page.goto('/tools/backtest?st=rebal&pw=crypto:BTC%3D0.5%3Bstock:SPY%3D0.5&lb=2');
+  await expect(page.getByText(/MONTHLY REBALANCE/)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('table', { name: 'Strategy and benchmark metrics' })).toBeVisible({ timeout: 30_000 });
+});

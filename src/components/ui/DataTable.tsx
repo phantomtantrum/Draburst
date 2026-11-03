@@ -28,7 +28,7 @@ export function DataTable<R>({
   maxHeight?: number;
 }) {
   return (
-    <div className={cn('w-full overflow-x-auto', className)} style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}>
+    <div className={cn('relative w-full overflow-x-auto', className)} style={maxHeight ? { maxHeight, overflowY: 'auto' } : undefined}>
       <table className="w-full border-collapse text-[13px]">
         <caption className="sr-only">{caption}</caption>
         <thead className="sticky top-0 z-[1] bg-bg">

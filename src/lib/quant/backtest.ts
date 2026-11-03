@@ -325,12 +325,14 @@ export interface RebalanceParams {
   commissionBps: number;
   slippageBps: number;
   initialCapital: number;
+  /** 'monthly' (default) or 'none' = buy the initial weights and let them drift */
+  mode?: 'monthly' | 'none';
 }
 
 /**
- * Rebalance to target weights at the OPEN of the first bar of each month
- * (decided from the previous month's last close). `bars[a][t]` must be
- * calendar-aligned across assets.
+ * Allocate at the OPEN of bar 1 (decided at close 0), then rebalance to the
+ * target weights at the OPEN of the first bar of each new month (decided from
+ * the previous month's last close). `bars[a][t]` must be calendar-aligned.
  */
 export function backtestRebalance(bars: ReadonlyArray<ReadonlyArray<Bar>>, p: RebalanceParams): { equity: Float64Array; turnover: number; costs: number } {
   const A = bars.length;
@@ -344,7 +346,7 @@ export function backtestRebalance(bars: ReadonlyArray<ReadonlyArray<Bar>>, p: Re
   let lastMonth = -1;
   for (let t = 0; t < n; t++) {
     const m = new Date(bars[0]![t]!.t).getUTCMonth();
-    if (t > 0 && m !== lastMonth) {
+    if (t === 1 || (t > 1 && m !== lastMonth && (p.mode ?? 'monthly') === 'monthly')) {
       // value at the open
       let eq = cash;
       for (let a = 0; a < A; a++) eq += units[a]! * bars[a]![t]!.o;
