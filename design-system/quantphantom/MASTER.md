@@ -102,6 +102,11 @@ Semantic tokens (dark default):
 | `--gain` | `#3CCF8E` | `#0A7D48` | 10.5:1 / 5.2:1 | positive values, ▲, LIVE, heatmap gain cells, paths ≥ S₀ |
 | `--loss` | `#FF5C5C` | `#C8102E` | 6.9:1 / 5.9:1 | negative values, ▼, errors, drawdown, heatmap loss cells, paths < S₀ |
 
+Dark theme base is **soft charcoal, not pure black**: `--bg #121212`,
+`--surface #181818`, `--surface-2 #1E1E1E`, rules `#2A2A2A` / `#3A3A3A`,
+`--fg #F2F2F2`. No film grain and no dither textures on backgrounds; the
+3D post pass keeps the canvas background flat at `--bg`.
+
 Heatmap cells: `--surface-2` base + the hue at `fill-opacity` 0.1–0.55
 proportional to |value|, value printed in `--fg` (stays ≥ 4.5:1 in both
 themes). Text tokens were raised for readability: `--fg-muted` `#A3A3A3`

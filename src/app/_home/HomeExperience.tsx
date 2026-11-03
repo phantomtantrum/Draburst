@@ -3,61 +3,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
-import { Pause, Play } from 'lucide-react';
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { ScrambleText } from '@/components/ui/ScrambleText';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { Delta } from '@/components/ui/Delta';
-import { IconButton } from '@/components/ui/Button';
 import { UtcClock } from '@/components/shell/UtcClock';
 import type { ClusterState, SculptureInputs } from '@/components/three/Sculpture';
 import { startLive, useLive } from '@/lib/live/binanceStream';
 import { correlationLayout } from '@/lib/live/layout';
-import { fetchBars, fetchStatus } from '@/lib/market/client';
+import { fetchBars } from '@/lib/market/client';
 import { alignSeries } from '@/lib/market/align';
 import type { BarsResponse } from '@/lib/market/types';
 import { useStageMode, useReducedMotion } from '@/lib/hooks/useMedia';
 import { correlation, std } from '@/lib/quant/stats';
 import { logReturns } from '@/lib/quant/returns';
-import { fmtPrice } from '@/lib/format';
-import { cn } from '@/lib/cn';
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+import { fmtPct, fmtPrice } from '@/lib/format';
 
 const HeroCanvas = dynamic(() => import('./HeroCanvas'), { ssr: false });
 
 const CRYPTO = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'AVAX'];
-const STOCKS = ['SPY', 'QQQ', 'AAPL', 'NVDA'];
-
-const STEPS = [
-  {
-    idx: '01',
-    title: 'Monte Carlo',
-    shape: 'FAN',
-    href: '/tools/monte-carlo',
-    body: 'The sculpture dissolves into thousands of possible futures. Each line is a path; depth is its rank at the horizon. Density, not color, tells you where the mass of outcomes lies.',
-    metric: 'P(S_T > target) · VaR · CVaR · percentile bands',
-  },
-  {
-    idx: '02',
-    title: 'Portfolio',
-    shape: 'CLOUD',
-    href: '/tools/portfolio',
-    body: 'Re-formed as a cloud of random portfolios in risk × return × Sharpe space. The white ridge along its upper edge is the efficient frontier.',
-    metric: 'Min-variance · max-Sharpe · Ledoit–Wolf · risk contribution',
-  },
-  {
-    idx: '03',
-    title: 'Backtest',
-    shape: 'RIBBON',
-    href: '/tools/backtest',
-    body: 'Finally a ribbon of equity through time with drawdowns carved underneath. Signals on the close, fills on the next open — no look-ahead.',
-    metric: 'CAGR · Sharpe · Sortino · max drawdown · parameter sweeps',
-  },
-];
+const SHOWN = 6;
 
 interface AssetInfo {
   symbol: string;
@@ -65,25 +28,20 @@ interface AssetInfo {
   vol30: number;
   lastClose: number;
   change1d: number;
-  cls: 'crypto' | 'stock';
 }
 
-export function HomeExperience() {
+/**
+ * Landing hero: plain headline + calls to action on the left, a live market
+ * panel on the right (3D sculpture on capable devices, always a price table).
+ */
+export function HomeHero() {
   const mode = useStageMode();
   const reduce = useReducedMotion();
   const live = useLive();
-  const wrap = useRef<HTMLDivElement>(null);
-  const overlay = useRef<HTMLDivElement>(null);
   const [assets, setAssets] = useState<AssetInfo[]>([]);
-  const [paused, setPaused] = useState(false);
 
   // mutable scene inputs — one stable object, written by effects, read by the scene every frame
   const inputsRef = useRef<SculptureInputs>(createInputs());
-  const [now, setNow] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   // ── daily data: realized vol, correlation layout, last close fallback ──
   useEffect(() => {
@@ -106,15 +64,7 @@ export function HomeExperience() {
         cl[k]!.center = [(c[0]! / maxSpread) * 3.2, (c[1]! / maxSpread) * 1.5, (c[2]! / maxSpread) * 1.6];
         cl[k]!.turbulence = Math.min(1, Math.max(0.06, info[i]!.vol30 / 1.3));
       });
-      setAssets((prev) => [...info, ...prev.filter((p) => p.cls === 'stock')]);
-    });
-    fetchStatus().then((st) => {
-      if (!st.stock.configured) return;
-      Promise.allSettled(STOCKS.map((s) => fetchBars(`stock:${s}`, 1))).then((res) => {
-        if (!alive) return;
-        const info = res.flatMap((r) => (r.status === 'fulfilled' ? [toInfo(r.value, 252)] : []));
-        setAssets((prev) => [...prev.filter((p) => p.cls === 'crypto'), ...info]);
-      });
+      setAssets(info);
     });
     return () => {
       alive = false;
@@ -142,118 +92,116 @@ export function HomeExperience() {
     }
   }, [live]);
 
-  // ── scroll → morph (native scroll; GSAP only observes) ──
-  const animate = mode === 'full' && !reduce;
-  useGSAP(
-    () => {
-      if (!wrap.current || !animate) return;
-      ScrollTrigger.create({
-        trigger: wrap.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        onUpdate: (self) => {
-          inputsRef.current.morph.target = Math.min(3, Math.max(0, self.progress * 3.6 - 0.3));
-          // the hero wordmark steps aside as the intro begins
-          const o = Math.max(0, 1 - self.progress * 6);
-          if (overlay.current) {
-            overlay.current.style.opacity = String(o);
-            overlay.current.style.visibility = o === 0 ? 'hidden' : 'visible';
-          }
-        },
-      });
-    },
-    { scope: wrap, dependencies: [animate] },
-  );
-
   const status = live.status === 'live' ? 'live' : live.status === 'connecting' ? 'loading' : live.status;
-  const statusDetail = undefined;
+  const anyLive = Object.keys(live.ticks).length > 0;
   const rows = useMemo(
     () =>
-      [...assets].map((a) => {
+      assets.slice(0, SHOWN).map((a) => {
         const t = live.ticks[a.symbol];
-        return t && a.cls === 'crypto'
-          ? { ...a, price: t.price, change: t.price / t.open24 - 1, live: true }
-          : { ...a, price: a.lastClose, change: a.change1d, live: false };
+        return t ? { ...a, price: t.price, change: t.price / t.open24 - 1 } : { ...a, price: a.lastClose, change: a.change1d };
       }),
     [assets, live],
   );
+  const show3D = mode === 'full' || mode === 'static';
 
   return (
-    <>
-      <div ref={wrap} className="relative" style={{ height: animate ? '400svh' : undefined }}>
-        <div className={cn('top-0 h-[100svh] w-full overflow-hidden bg-black', animate ? 'sticky' : 'relative')}>
-          {mode && mode !== 'none' && (
+    <section
+      aria-labelledby="hero-title"
+      className="mx-auto grid max-w-[1400px] items-center gap-12 px-4 pt-14 pb-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16 lg:px-6 lg:pt-24 lg:pb-28"
+    >
+      <div>
+        <p className="ui-label inline-flex items-center gap-2 border border-rule bg-surface px-3 py-1.5 text-[13px] text-body">
+          <span aria-hidden className="inline-block size-1.5 rounded-full bg-gain" />
+          Free · live crypto data · no sign-up needed
+        </p>
+        <h1 id="hero-title" className="mt-6 text-[clamp(38px,5.2vw,64px)] leading-[1.04] font-bold tracking-[-0.035em] text-fg">
+          Quant research on real market data.
+        </h1>
+        <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-body">
+          Simulate thousands of price paths, build an efficient portfolio and backtest a trading strategy, right in your browser. Every formula is
+          shown, every run is reproducible.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/tools/monte-carlo" className="ui-label inline-flex h-11 items-center border border-fg bg-fg px-5 text-bg hover:bg-transparent hover:text-fg">
+            Start with Monte Carlo →
+          </Link>
+          <Link href="#tools" className="ui-label inline-flex h-11 items-center border border-rule-strong px-5 text-fg hover:border-fg">
+            See all tools
+          </Link>
+        </div>
+        <p className="mt-8 text-[13px] text-muted">Data from Binance (live) and Tiingo (end of day). Not investment advice.</p>
+      </div>
+
+      <div className="min-w-0 border border-rule bg-surface">
+        <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+          <h2 className="ui-label text-fg">Market now</h2>
+          <div className="flex items-center gap-3">
+            <UtcClock className="label num hidden text-muted sm:inline" />
+            <StatusChip status={status} />
+          </div>
+        </div>
+        {show3D && (
+          <div className="relative h-[220px] border-b border-rule bg-bg sm:h-[260px]">
             <HeroCanvas
               inputs={inputsRef}
               nClusters={CRYPTO.length}
-              animate={animate}
-              label="Live market sculpture: one particle cluster per crypto asset; turbulence follows realized volatility, size follows 24-hour volume, and correlated assets sit close together. Prices are listed in the ticker strip."
+              animate={mode === 'full' && !reduce}
+              label="Live market sculpture: one particle cluster per crypto asset; turbulence follows realized volatility, size follows 24-hour volume, and correlated assets sit close together. Prices are listed in the table below."
             />
-          )}
-          {mode === 'none' && <div className="dither absolute inset-0 text-[var(--qp-gray-800)]" aria-hidden />}
-          {/* instrument overlay */}
-          <div ref={overlay} className="pointer-events-none absolute inset-0 mx-auto flex max-w-[1600px] flex-col justify-between px-4 pt-6 pb-10 lg:px-6">
-            <div className="flex items-start justify-between gap-4">
-              <SectionLabel index="00" title="Live market sculpture" />
-              <div className="label flex flex-col items-end gap-1 text-muted">
-                <StatusChip status={status} detail={live.status === 'stale' && live.lastMessage && now ? `${Math.max(0, Math.round((now - live.lastMessage) / 1000))}S` : live.status === 'offline' ? 'LAST CLOSE' : statusDetail} />
-                <UtcClock className="num" />
-                <span>SRC BINANCE WS{assets.some((a) => a.cls === 'stock') ? ' · TIINGO EOD' : ''}</span>
-              </div>
-            </div>
-            <div>
-              <h1 className="display-xl text-fg mix-blend-difference">
-                <ScrambleText text="quantphantom" />
-              </h1>
-              <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-body">
-                Quant research tools on real market data: Monte Carlo simulation, portfolio optimization and strategy backtesting, each with a 3D view.
-              </p>
-              <div className="pointer-events-auto mt-6 flex flex-wrap gap-2">
-                <Link href="/tools/monte-carlo" className="ui-label inline-flex h-10 items-center border border-fg bg-fg px-4 text-bg hover:bg-bg hover:text-fg">
-                  Monte Carlo →
-                </Link>
-                <Link href="/tools/portfolio" className="ui-label inline-flex h-10 items-center border border-rule-strong bg-bg px-4 text-fg hover:border-fg">
-                  Portfolio →
-                </Link>
-                <Link href="/tools/backtest" className="ui-label inline-flex h-10 items-center border border-rule-strong bg-bg px-4 text-fg hover:border-fg">
-                  Backtest →
-                </Link>
-              </div>
-              <p className="label mt-6 text-muted max-sm:hidden">
-                TURBULENCE = REALIZED VOL · SCALE = 24H VOLUME · PROXIMITY = CORRELATION · EACH TICK = A RIPPLE{animate ? ' · SCROLL ↓' : ''}
-              </p>
-            </div>
+            <p className="label pointer-events-none absolute bottom-2 left-3 text-muted">One cluster per asset · motion = volatility</p>
           </div>
-        </div>
-
-        <TickerStrip rows={rows} paused={paused || reduce} onToggle={() => setPaused((p) => !p)} reduce={reduce} />
-
-        {/* scroll intro: text steps over the pinned sculpture */}
-        <div className={cn(animate ? 'absolute inset-x-0 top-[100svh]' : 'relative')}>
-          {STEPS.map((s) => (
-            <section key={s.idx} aria-labelledby={`step-${s.idx}`} className={cn('mx-auto flex max-w-[1600px] items-center px-4 lg:px-6', animate ? 'h-[100svh]' : 'border-b border-rule py-16')}>
-              <div className="max-w-md border border-rule bg-black/80 p-6">
-                <SectionLabel index={s.idx} title={s.shape} />
-                <h2 id={`step-${s.idx}`} className="display-m mt-4">
-                  {s.title}
-                </h2>
-                <p className="mt-4 text-[16px] leading-relaxed text-body">{s.body}</p>
-                <p className="label mt-4 text-muted">{s.metric}</p>
-                <Link href={s.href} className="ui-label mt-6 inline-block border border-fg bg-fg px-4 py-2.5 text-bg hover:bg-bg hover:text-fg">
-                  Open tool →
-                </Link>
-              </div>
-            </section>
-          ))}
-        </div>
+        )}
+        <table className="w-full border-collapse text-[14px]">
+          <caption className="sr-only">Latest crypto prices</caption>
+          <thead>
+            <tr className="border-b border-rule text-left">
+              <th scope="col" className="ui-label px-4 py-2 text-[13px] text-muted">
+                Asset
+              </th>
+              <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
+                Price
+              </th>
+              <th scope="col" className="ui-label px-4 py-2 text-right text-[13px] text-muted">
+                {anyLive ? '24h' : '1d'}
+              </th>
+              <th scope="col" className="ui-label hidden px-4 py-2 text-right text-[13px] text-muted sm:table-cell">
+                30d vol
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length
+              ? rows.map((r) => (
+                  <tr key={r.symbol} className="border-b border-rule last:border-b-0">
+                    <th scope="row" className="px-4 py-2.5 text-left font-normal whitespace-nowrap">
+                      <span className="num text-fg">{r.symbol}</span> <span className="ml-1 text-[13px] text-muted max-sm:hidden">{r.name}</span>
+                    </th>
+                    <td className="num px-4 py-2.5 text-right text-fg">{fmtPrice(r.price)}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <Delta value={r.change} />
+                    </td>
+                    <td className="num hidden px-4 py-2.5 text-right text-body sm:table-cell">{fmtPct(r.vol30, 0)}</td>
+                  </tr>
+                ))
+              : Array.from({ length: SHOWN }, (_, i) => (
+                  <tr key={i} className="border-b border-rule last:border-b-0" aria-hidden>
+                    <td colSpan={4} className="px-4 py-2.5">
+                      <span className="block h-[21px] w-full animate-pulse bg-surface-2" />
+                    </td>
+                  </tr>
+                ))}
+          </tbody>
+        </table>
       </div>
-    </>
+    </section>
   );
 }
 
 function createInputs(): SculptureInputs {
   return {
-    clusters: CRYPTO.map((_, i): ClusterState => ({ center: [Math.cos(i) * 2, Math.sin(i * 1.3), Math.sin(i) * 1.5], scale: 0.55, turbulence: 0.3, rippleT: -99, rippleSign: 1, rippleAmp: 0 })),
+    clusters: CRYPTO.map(
+      (_, i): ClusterState => ({ center: [Math.cos(i) * 2, Math.sin(i * 1.3), Math.sin(i) * 1.5], scale: 0.55, turbulence: 0.3, rippleT: -99, rippleSign: 1, rippleAmp: 0 }),
+    ),
     morph: { target: 0 },
     clock: { now: 0 },
   };
@@ -268,53 +216,5 @@ function toInfo(b: BarsResponse, ppy: number): AssetInfo {
     vol30: std(lr) * Math.sqrt(ppy),
     lastClose: c[c.length - 1]!,
     change1d: c[c.length - 1]! / c[c.length - 2]! - 1,
-    cls: b.asset.cls,
   };
 }
-
-function TickerStrip({
-  rows,
-  paused,
-  onToggle,
-  reduce,
-}: {
-  rows: Array<AssetInfo & { price: number; change: number; live: boolean }>;
-  paused: boolean;
-  onToggle: () => void;
-  reduce: boolean;
-}) {
-  if (!rows.length) return <div className="sticky top-12 z-30 h-10 border-y border-rule bg-bg" aria-hidden />;
-  const items = rows.map((r) => (
-    <span key={r.symbol} className="flex items-baseline gap-2 px-5 whitespace-nowrap">
-      <span className="num text-[13px] text-fg">{r.symbol}</span>
-      <span className="num text-[13px] text-body">{fmtPrice(r.price)}</span>
-      <Delta value={r.change} className="text-[12px]" />
-      <span className="label text-muted">{r.live ? '24H' : r.cls === 'stock' ? 'EOD' : '1D'}</span>
-    </span>
-  ));
-  return (
-    <div className="sticky top-12 z-30 flex h-10 items-center border-y border-rule bg-bg" role="region" aria-label="Live tickers">
-      <div className="relative flex-1 overflow-hidden">
-        {reduce ? (
-          <div className="flex flex-wrap">{items}</div>
-        ) : (
-          <div className={cn('qp-marquee flex w-max', paused && '[animation-play-state:paused]')} aria-live="off">
-            <div className="flex">{items}</div>
-            <div className="flex" aria-hidden>
-              {items}
-            </div>
-          </div>
-        )}
-      </div>
-      {!reduce && (
-        <IconButton label={paused ? 'Resume ticker' : 'Pause ticker'} onClick={onToggle} className="mx-2 shrink-0">
-          {paused ? <Play size={14} strokeWidth={1.5} aria-hidden /> : <Pause size={14} strokeWidth={1.5} aria-hidden />}
-        </IconButton>
-      )}
-      <span className="sr-only">
-        {rows.map((r) => `${r.symbol} ${fmtPrice(r.price)} ${r.change >= 0 ? 'up' : 'down'} ${Math.abs(r.change * 100).toFixed(2)} percent`).join('; ')}
-      </span>
-    </div>
-  );
-}
-

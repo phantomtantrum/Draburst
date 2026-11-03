@@ -3,7 +3,6 @@ import { Inter_Tight, JetBrains_Mono } from 'next/font/google';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { SiteHeader } from '@/components/shell/SiteHeader';
 import { SiteFooter } from '@/components/shell/SiteFooter';
-import { Grain } from '@/components/shell/Grain';
 import './globals.css';
 
 const display = Inter_Tight({
@@ -28,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#121212',
   colorScheme: 'dark',
   width: 'device-width',
   initialScale: 1,
@@ -51,7 +50,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <SiteFooter />
         </NuqsAdapter>
-        <Grain />
       </body>
     </html>
   );

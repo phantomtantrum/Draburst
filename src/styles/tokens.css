@@ -16,22 +16,21 @@
   --qp-gray-100: #ededed;
   --qp-white: #ffffff;
 
-  /* semantic — dark default */
-  --bg: var(--qp-black);
-  --surface: var(--qp-gray-950);
-  --surface-2: var(--qp-gray-900);
-  --surface-hover: var(--qp-gray-850);
-  --fg: var(--qp-white);
-  --fg-body: var(--qp-gray-200);
-  --fg-muted: #a3a3a3; /* secondary text, 8.4:1 on black */
+  /* semantic — dark default. Soft charcoal, not pure black: easier on the eyes */
+  --bg: #121212;
+  --surface: #181818;
+  --surface-2: #1e1e1e;
+  --surface-hover: #242424;
+  --fg: #f2f2f2;
+  --fg-body: #d6d6d6;
+  --fg-muted: #a3a3a3; /* secondary text, 7.4:1 on --bg */
   --fg-subtle: #7a7a7a; /* non-text marks, large display only */
-  --rule: var(--qp-gray-800);
-  --rule-strong: var(--qp-gray-700);
-  --rule-faint: var(--qp-gray-850);
-  --focus: var(--qp-white);
-  --selection-bg: var(--qp-white);
-  --selection-fg: var(--qp-black);
-  --grain-opacity: 0.018;
+  --rule: #2a2a2a;
+  --rule-strong: #3a3a3a;
+  --rule-faint: #1f1f1f;
+  --focus: var(--fg);
+  --selection-bg: var(--fg);
+  --selection-fg: var(--bg);
 
   /* semantic gain / loss — the only hues in the system (MASTER §2.1, §6) */
   --gain: #3ccf8e; /* 10.5:1 on black */
@@ -62,7 +61,6 @@
   --focus: #000000;
   --selection-bg: #000000;
   --selection-fg: #ffffff;
-  --grain-opacity: 0.025;
   --gain: #0a7d48; /* 5.2:1 on white */
   --loss: #c8102e; /* 5.9:1 on white */
   color-scheme: light;

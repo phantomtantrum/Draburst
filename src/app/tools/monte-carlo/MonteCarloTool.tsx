@@ -399,8 +399,7 @@ function bandRows(grid: Int32Array, bands: Float64Array[], mean: Float64Array) {
 
 export function StagePlaceholder({ text }: { text: string }) {
   return (
-    <div className="relative flex h-[min(72svh,640px)] w-full items-center justify-center overflow-hidden border border-rule bg-black">
-      <div className="dither absolute inset-0 text-[var(--qp-gray-800)] opacity-60" aria-hidden />
+    <div className="relative flex h-[min(72svh,640px)] w-full items-center justify-center overflow-hidden border border-rule bg-surface">
       <p className="label relative text-muted" role="status">
         {text}
       </p>

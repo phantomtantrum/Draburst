@@ -14,6 +14,7 @@ uniform float uTime;
 uniform float uGrain;
 uniform float uLevels;
 uniform float uDither;
+uniform float uBg;
 
 float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
 #define bayer4(a) (bayer2(0.5 * (a)) * 0.25 + bayer2(a))
@@ -26,13 +27,17 @@ float hash(vec2 p) {
 }
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
+  // work on the signal above the background so the empty canvas stays a flat,
+  // noise-free --bg instead of a speckled dither field
   float l = dot(inputColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+  float s = clamp((l - uBg) / (1.0 - uBg), 0.0, 1.0);
   vec2 px = gl_FragCoord.xy;
   float g = hash(px + floor(uTime * 12.0) * vec2(17.0, 31.0)) - 0.5;
-  l = clamp(l + g * uGrain, 0.0, 1.0);
-  float d = bayer8(px) - 0.5;
-  float q = floor(l * uLevels + 0.5 + d * uDither) / uLevels;
-  outputColor = vec4(vec3(clamp(q, 0.0, 1.0)), inputColor.a);
+  float presence = smoothstep(0.0, 0.04, s);
+  s = clamp(s + g * uGrain * presence, 0.0, 1.0);
+  float d = (bayer8(px) - 0.5) * presence;
+  float q = clamp(floor(s * uLevels + 0.5 + d * uDither) / uLevels, 0.0, 1.0);
+  outputColor = vec4(vec3(uBg + q * (1.0 - uBg)), inputColor.a);
 }
 `;
 
@@ -41,11 +46,17 @@ export interface PhantomOptions {
   levels?: number;
   dither?: number;
   animate?: boolean;
+  /** background luma (0–1, linear) kept flat; defaults to the --bg token #121212 */
+  bg?: number;
 }
+
+/** The effect runs on linear color, so the sRGB --bg (#121212) is converted once. */
+const srgbToLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const BG_LINEAR = srgbToLinear(0x12 / 255);
 
 class PhantomEffectImpl extends Effect {
   animate: boolean;
-  constructor({ grain = 0.08, levels = 7, dither = 1, animate = true }: PhantomOptions = {}) {
+  constructor({ grain = 0.08, levels = 7, dither = 1, animate = true, bg = BG_LINEAR }: PhantomOptions = {}) {
     super('PhantomEffect', fragment, {
       blendFunction: BlendFunction.NORMAL,
       uniforms: new Map<string, Uniform<number>>([
@@ -53,6 +64,7 @@ class PhantomEffectImpl extends Effect {
         ['uGrain', new Uniform(grain)],
         ['uLevels', new Uniform(levels)],
         ['uDither', new Uniform(dither)],
+        ['uBg', new Uniform(bg)],
       ]),
     });
     this.animate = animate;
@@ -62,8 +74,8 @@ class PhantomEffectImpl extends Effect {
   }
 }
 
-export const PhantomEffect = forwardRef<PhantomEffectImpl, PhantomOptions>(function PhantomEffect({ grain, levels, dither, animate }, ref) {
-  const effect = useMemo(() => new PhantomEffectImpl({ grain, levels, dither, animate }), [grain, levels, dither, animate]);
+export const PhantomEffect = forwardRef<PhantomEffectImpl, PhantomOptions>(function PhantomEffect({ grain, levels, dither, animate, bg }, ref) {
+  const effect = useMemo(() => new PhantomEffectImpl({ grain, levels, dither, animate, bg }), [grain, levels, dither, animate, bg]);
   useEffect(() => () => effect.dispose(), [effect]);
   return <primitive ref={ref} object={effect} dispose={null} />;
 });

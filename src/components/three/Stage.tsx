@@ -7,6 +7,7 @@ import { EffectComposer } from '@react-three/postprocessing';
 import { PhantomEffect } from './PhantomEffect';
 import { useActive } from '@/lib/hooks/useInView';
 import type { StageMode } from '@/lib/hooks/useMedia';
+import { STAGE_BG } from './bg';
 
 /**
  * WebGL stage used by every tool.
@@ -42,7 +43,7 @@ export function Stage({
   const [dpr, setDpr] = useState(1.5);
   const full = mode === 'full';
   return (
-    <div ref={ref} className="relative w-full overflow-hidden border border-rule bg-black" style={{ height }}>
+    <div ref={ref} className="relative w-full overflow-hidden border border-rule bg-bg" style={{ height }}>
       <Canvas
         role="img"
         aria-label={label}
@@ -51,11 +52,11 @@ export function Stage({
         camera={{ position: camera, fov: 35, near: 0.1, far: 100 }}
         raycaster={{ params: { Points: { threshold: pointThreshold }, Mesh: {}, Line: { threshold: 1 }, LOD: {}, Sprite: {} } }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-        onCreated={({ gl }) => gl.setClearColor(0x000000, 1)}
+        onCreated={({ gl }) => gl.setClearColor(STAGE_BG, 1)}
       >
         <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} flipflops={3} onFallback={() => setDpr(1)} />
         <AdaptiveDpr pixelated />
-        <fog attach="fog" args={[0x000000, 9, 22]} />
+        <fog attach="fog" args={[STAGE_BG, 9, 22]} />
         <Suspense fallback={null}>{children}</Suspense>
         <OrbitControls
           makeDefault
@@ -79,7 +80,7 @@ export function Stage({
 
 /** Corner readouts in instrument style. */
 export function StageCorners({ tl, tr, bl, br }: { tl?: ReactNode; tr?: ReactNode; bl?: ReactNode; br?: ReactNode }) {
-  const c = 'label absolute text-muted bg-black/70 px-1.5 py-1 num';
+  const c = 'label absolute text-muted bg-bg/80 px-1.5 py-1 num';
   return (
     <>
       {tl && <div className={c + ' top-2 left-2'}>{tl}</div>}

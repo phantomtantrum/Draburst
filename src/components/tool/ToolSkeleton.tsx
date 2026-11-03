@@ -11,9 +11,8 @@ export function ToolSkeleton({ stageBar = false }: { stageBar?: boolean }) {
         <div className="hidden lg:block lg:border-r lg:border-rule" />
         <div className="min-w-0 pt-2 lg:pl-6">
           {stageBar && <div className="mb-2 min-h-[34px]" />}
-          <div className="relative h-[min(72svh,640px)] w-full overflow-hidden border border-rule bg-black">
-            <div className="dither absolute inset-0 text-[var(--qp-gray-800)] opacity-60" aria-hidden />
-          </div>
+          <div className="relative h-[min(72svh,640px)] w-full overflow-hidden border border-rule bg-surface">
+                </div>
         </div>
       </div>
     </div>
