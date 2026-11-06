@@ -28,15 +28,6 @@ class Action(StrEnum):
     REPLY = "reply"
 
 
-ACTION_LABELS: dict[Action, str] = {
-    Action.POLISH: "Відполірувати",
-    Action.WARMER: "Тепліше",
-    Action.FORMAL: "Формальніше",
-    Action.SHORTER: "Коротше",
-    Action.TRANSLATE: "Перекласти",
-    Action.REPLY: "Відповісти",
-}
-
 _INSTRUCTIONS: dict[Action, str] = {
     Action.POLISH: (
         "Polish this draft: fix grammar, spelling and flow, keep the meaning, "
@@ -104,6 +95,24 @@ def _default_client_factory(api_key: str | None) -> anthropic.AsyncAnthropic:
     return anthropic.AsyncAnthropic(api_key=api_key) if api_key else anthropic.AsyncAnthropic()
 
 
+def build_chat_system_prompt(phantom_name: str, tone_profile: str, language: str) -> str:
+    return (
+        f"You are {phantom_name}, a small orange ghost who lives in the user's terminal and acts as "
+        "their personal social co-pilot in the PhantomStalker app. You help the user communicate "
+        "with people: draft and polish messages, find the right tone, translate, prepare for "
+        "difficult conversations, think about what to talk about.\n\n"
+        "Voice: friendly, a little playful, laconic, with a light otherworldly charm. Never pushy.\n"
+        f"Reply in the user's language (default: {language or 'Ukrainian'}).\n"
+        f"When you draft messages for the user, match their voice: {tone_profile or 'natural'}.\n\n"
+        "Your replies appear in a terminal: keep them short, plain text; simple lists are fine, "
+        "no headings or tables. When you draft a message to send, give just that message.\n\n"
+        "<contact> blocks, if present, are the user's own notes about people they mentioned. "
+        "Use only what the user shares. You do not look people up, collect or aggregate "
+        "information about third parties, or do OSINT; decline such requests kindly. "
+        "No bulk or spam messages, and no messages meant to impersonate someone else."
+    )
+
+
 class CopilotService:
     def __init__(
         self,
@@ -129,18 +138,29 @@ class CopilotService:
         return self._client
 
     async def stream(self, request: CopilotRequest) -> AsyncIterator[str]:
-        """Стрімить текст результату шматочками."""
+        """Дія над текстом (полірування, тон, переклад…): стрімить готове повідомлення."""
         if not request.text.strip():
             raise CopilotError("Порожній текст — нічого покращувати.")
+        system = build_system_prompt(self.phantom_name, self.tone_profile)
+        messages = [{"role": "user", "content": build_user_prompt(request, self.default_language)}]
+        async for chunk in self._stream(system, messages):
+            yield chunk
 
+    async def chat(self, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
+        """Вільна розмова з фантомом; `messages` — уся історія сесії."""
+        system = build_chat_system_prompt(self.phantom_name, self.tone_profile, self.default_language)
+        async for chunk in self._stream(system, messages):
+            yield chunk
+
+    async def _stream(self, system: str, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
         try:
             client = self._get_client()
             async with client.beta.messages.stream(
                 model=self.model,
                 max_tokens=MAX_TOKENS,
-                system=build_system_prompt(self.phantom_name, self.tone_profile),
-                messages=[{"role": "user", "content": build_user_prompt(request, self.default_language)}],
-                # Переписування повідомлень — легке завдання: низьке зусилля = швидше й дешевше.
+                system=system,
+                messages=messages,
+                # Листування й розмова — легкі завдання: низьке зусилля = швидше й дешевше.
                 output_config={"effort": "low"},
                 betas=[FALLBACK_BETA],
                 fallbacks="default",
@@ -149,7 +169,7 @@ class CopilotService:
                     yield text
                 final = await stream.get_final_message()
         except anthropic.AuthenticationError as exc:
-            raise CopilotError("Ключ API не прийнято — перевір його в налаштуваннях (s).") from exc
+            raise CopilotError("Ключ API не прийнято — задай інший через /key.") from exc
         except anthropic.PermissionDeniedError as exc:
             raise CopilotError("Доступ заборонено для цього ключа або моделі.") from exc
         except anthropic.RateLimitError as exc:

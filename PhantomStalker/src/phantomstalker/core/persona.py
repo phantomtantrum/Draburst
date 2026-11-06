@@ -65,6 +65,15 @@ FRAMES: dict[Mood, list[list[str]]] = {
     ],
 }
 
+# Мініатюрна мордочка для рядка статусу над полем вводу.
+MINI: dict[Mood, list[str]] = {
+    Mood.IDLE: ["(o o)", "(o o)", "(o o)", "(- -)"],  # зрідка кліпає
+    Mood.THINKING: ["(o O)", "(O o)"],
+    Mood.HAPPY: ["(^ ^)", "(^‿^)"],
+    Mood.ALERT: ["(O O)", "(O_O)"],
+    Mood.SLEEPING: ["(- -)", "(- -)"],
+}
+
 COLORS: dict[Mood, str] = {
     Mood.IDLE: "#FF8C42",  # тепле помаранчеве світіння
     Mood.THINKING: "#FFA94D",
@@ -92,7 +101,7 @@ REACTIONS: dict[str, Reaction] = {
         Mood.ALERT, ("З цим я не допоможу — спробуймо сформулювати інакше.",)
     ),
     "no_api_key": Reaction(
-        Mood.ALERT, ("Мені потрібен ключ API — натисни s, щоб додати.",)
+        Mood.ALERT, ("Мені потрібен ключ API — введи /key.",)
     ),
     "empty_input": Reaction(Mood.ALERT, ("Спершу напиши або встав текст.",)),
     "contact_added": Reaction(Mood.HAPPY, ("Запам'ятав: {name}.", "Новий друг у списку — {name}!")),
@@ -141,6 +150,10 @@ class PersonaEngine:
     def color(self) -> str:
         return COLORS[self.mood]
 
+    def mini(self) -> str:
+        faces = MINI[self.mood]
+        return faces[self.frame_index % len(faces)]
+
     def frame(self) -> list[str]:
         frames = FRAMES[self.mood]
         return frames[self.frame_index % len(frames)]
@@ -185,7 +198,7 @@ class PersonaEngine:
 
     # --- цикл анімації -----------------------------------------------------
     def tick(self) -> None:
-        self.frame_index = (self.frame_index + 1) % len(FRAMES[self.mood])
+        self.frame_index += 1
         if self._transient_left > 0:
             self._transient_left -= 1
             if self._transient_left == 0:

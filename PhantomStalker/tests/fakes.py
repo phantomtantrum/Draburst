@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from typing import Any
 
 
 class FakeStream:
-    def __init__(self, chunks: list[str], stop_reason: str) -> None:
+    def __init__(self, chunks: list[str], stop_reason: str, delay: float = 0.0) -> None:
         self._chunks = chunks
         self._stop_reason = stop_reason
+        self._delay = delay
 
     async def __aenter__(self) -> FakeStream:
         return self
@@ -21,6 +23,8 @@ class FakeStream:
     def text_stream(self):
         async def gen():
             for chunk in self._chunks:
+                if self._delay:
+                    await asyncio.sleep(self._delay)
                 yield chunk
 
         return gen()
@@ -31,7 +35,8 @@ class FakeStream:
 
 class FakeClient:
     def __init__(self, chunks: list[str] | None = None, stop_reason: str = "end_turn",
-                 error: Exception | None = None) -> None:
+                 error: Exception | None = None, delay: float = 0.0) -> None:
+        self._delay = delay
         self.calls: list[dict[str, Any]] = []
         self._chunks = chunks if chunks is not None else ["Привіт", "! Як ти?"]
         self._stop_reason = stop_reason
@@ -42,4 +47,4 @@ class FakeClient:
         self.calls.append(kwargs)
         if self._error is not None:
             raise self._error
-        return FakeStream(self._chunks, self._stop_reason)
+        return FakeStream(self._chunks, self._stop_reason, self._delay)

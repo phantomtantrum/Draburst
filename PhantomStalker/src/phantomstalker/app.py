@@ -1,53 +1,48 @@
-"""Головний Textual-застосунок PhantomStalker."""
+"""PhantomStalker — мінімалістична консоль: стрічка розмови, «> » унизу, slash-команди."""
 
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-from textual import events
-from textual.app import App, ComposeResult, SystemCommand
+from rich.console import RenderableType
+from textual import events, on, work
+from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal
-from textual.screen import Screen
-from textual.theme import Theme
-from textual.widgets import Button, Checkbox, Footer, Header, Input, Select, TabbedContent, TabPane, TextArea
+from textual.containers import Horizontal, VerticalScroll
+from textual.widgets import Label
+from textual.worker import Worker
 
+from phantomstalker.core.commands import (
+    AskSecret,
+    Clear,
+    CommandProcessor,
+    Confirm,
+    Exit,
+    Outcome,
+    Say,
+    StreamAction,
+    match_commands,
+    mention_context,
+)
 from phantomstalker.core.persona import Mood, PersonaEngine
-from phantomstalker.services.copilot import CopilotService
+from phantomstalker.services.copilot import (
+    CopilotError,
+    CopilotRefusal,
+    CopilotRequest,
+    CopilotService,
+    build_user_prompt,
+)
 from phantomstalker.services.crm import CRMRepository
 from phantomstalker.services.settings import KeyringBackend, SettingsService
-from phantomstalker.storage.db import connect
-from phantomstalker.ui.copilot_view import CopilotView
-from phantomstalker.ui.people_view import PeopleView
-from phantomstalker.ui.phantom_panel import PhantomPanel
-from phantomstalker.ui.screens import (
-    COACH_BODY,
-    FOOTPRINT_BODY,
-    ComingSoonView,
-    HelpScreen,
-    SettingsScreen,
-)
+from phantomstalker.storage.db import connect, default_db_path
+from phantomstalker.ui import console as ui
 
-MODULES = ("chat", "people", "footprint", "coach")
-FORM_WIDGETS = (Input, TextArea, Button, Checkbox, Select)
-
-PHANTOM_THEME = Theme(
-    name="phantom",
-    primary="#FF8C42",
-    secondary="#FFB75E",
-    accent="#FFA94D",
-    warning="#F2A541",
-    error="#E8553A",
-    success="#7BC67E",
-    background="#16120F",
-    surface="#1F1915",
-    panel="#2A211B",
-    dark=True,
-)
-
+TICK_SECONDS = 0.5
+PLACEHOLDER = "Напиши щось або / для команд"
 CopilotFactory = Callable[["PhantomStalkerApp"], CopilotService]
 
 
@@ -64,25 +59,24 @@ def _default_copilot_factory(app: PhantomStalkerApp) -> CopilotService:
 
 class PhantomStalkerApp(App):
     TITLE = "PhantomStalker"
-    SUB_TITLE = "Твій фантом. Твої люди. Твій слід."
     CSS = """
-    .form-screen { align: center middle; }
-    #body { height: 1fr; }
-    #modules { width: 1fr; }
+    Screen { background: ansi_default; }
+    #log { height: 1fr; padding: 1 1 1 1; scrollbar-size-vertical: 1; }
+    #prompt-box {
+        height: auto;
+        margin: 0 1;
+        padding: 0 1;
+        border: round $foreground 35%;
+    }
+    #prompt-box.secret { border: round #FF8C42; }
+    #caret { width: 2; color: $foreground 60%; }
+    PromptInput { border: none; height: 1; padding: 0; background: ansi_default; width: 1fr; }
+    PromptInput:focus { border: none; background: ansi_default; }
     """
 
     BINDINGS = [
-        Binding("1", "module('chat')", "Чат", show=False),
-        Binding("2", "module('people')", "Люди", show=False),
-        Binding("3", "module('footprint')", "Слід", show=False),
-        Binding("4", "module('coach')", "Коуч", show=False),
-        Binding("tab", "next_module", "модуль", priority=True),
-        Binding("shift+tab", "prev_module", "модуль", show=False, priority=True),
-        Binding("slash", "command_palette", "команда"),
-        Binding("question_mark", "help", "довідка"),
-        Binding("s", "settings", "налаштування"),
-        Binding("escape", "back", "назад", show=False),
-        Binding("q", "quit", "вихід"),
+        Binding("escape", "interrupt", show=False, priority=True),
+        Binding("ctrl+c", "ctrl_c", show=False, priority=True),
     ]
 
     def __init__(
@@ -93,35 +87,42 @@ class PhantomStalkerApp(App):
         copilot_factory: CopilotFactory = _default_copilot_factory,
         animate: bool = True,
     ) -> None:
-        super().__init__()
-        self.conn = db if isinstance(db, sqlite3.Connection) else connect(db)
+        super().__init__(ansi_color=True)
+        if isinstance(db, sqlite3.Connection):
+            self.conn, self._db_label = db, "in-memory"
+        else:
+            self.conn, self._db_label = connect(db), str(db or default_db_path())
         self.settings = SettingsService(self.conn, keyring_backend)
         self.crm = CRMRepository(self.conn)
         self.persona = PersonaEngine(self.settings.phantom_name)
+        self.commands = CommandProcessor(self.crm, self.settings, lambda: self.last_output)
         self._copilot_factory = copilot_factory
         self._animate = animate
 
-    # --- побудова екрана ---------------------------------------------------
+        self.chat_history: list[dict[str, Any]] = []
+        self.last_output = ""
+        self._history: list[str] = []
+        self._history_pos = 0
+        self._recalled: str | None = None  # значення з історії — для нього не показуємо підказки
+        self._pending: Confirm | AskSecret | None = None
+        self._stream_worker: Worker | None = None
+
+    # --- побудова ----------------------------------------------------------
     def compose(self) -> ComposeResult:
-        yield Header(show_clock=False, icon="👻")
-        with Horizontal(id="body"):
-            yield PhantomPanel(self.persona, animate=self._animate, id="phantom")
-            with TabbedContent(initial="chat", id="modules"):
-                with TabPane("[1] Чат", id="chat"):
-                    yield CopilotView()
-                with TabPane("[2] Люди", id="people"):
-                    yield PeopleView()
-                with TabPane("[3] Слід", id="footprint"):
-                    yield ComingSoonView("Вистеж себе", "v0.2", FOOTPRINT_BODY)
-                with TabPane("[4] Коуч", id="coach"):
-                    yield ComingSoonView("Підготовка до розмов", "v0.3", COACH_BODY)
-        yield Footer()
+        yield VerticalScroll(id="log")
+        yield ui.StatusLine(self.persona, id="status")
+        with Horizontal(id="prompt-box"):
+            yield Label(">", id="caret")
+            yield ui.PromptInput(id="prompt", placeholder=PLACEHOLDER)
+        yield ui.Suggestions(id="suggest")
 
     def on_mount(self) -> None:
-        self.register_theme(PHANTOM_THEME)
-        self.theme = "phantom"
+        self.query_one("#log", VerticalScroll).anchor()
+        self.add(ui.welcome(self.persona.name, self._db_label))
         self._greet()
-        self.set_focus(None)
+        if self._animate:
+            self.set_interval(TICK_SECONDS, self._tick)
+        self.prompt.focus()
 
     def _greet(self) -> None:
         row = self.conn.execute("SELECT last_seen FROM persona_state WHERE id = 1").fetchone()
@@ -129,10 +130,10 @@ class PhantomStalkerApp(App):
         reminders = self.crm.reminders(stale_after_days=self.settings.stale_after_days)
         reminder = reminders[0].text if reminders else None
         if not self.settings.has_api_key():
-            reminder = (reminder + "\n" if reminder else "") + "Додай ключ API в налаштуваннях (s)."
-        self.persona.greet(reminder, last_seen)
+            reminder = (reminder + "\n" if reminder else "") + "Щоб я міг відповідати, задай ключ API: /key"
+        line = self.persona.greet(reminder, last_seen)
+        self.add(ui.phantom_message(line.replace("\n", "  \n")))
         self._save_persona_state()
-        self._sync_panel()
 
     def _save_persona_state(self) -> None:
         self.conn.execute(
@@ -142,84 +143,227 @@ class PhantomStalkerApp(App):
         )
         self.conn.commit()
 
-    def _sync_panel(self) -> None:
-        try:
-            self.query_one(PhantomPanel).sync()
-        except Exception:
-            pass
+    # --- допоміжне ---------------------------------------------------------
+    @property
+    def prompt(self) -> ui.PromptInput:
+        return self.query_one("#prompt", ui.PromptInput)
 
-    # --- API для модулів ---------------------------------------------------
-    def react(self, event: str, **fmt: object) -> str:
-        line = self.persona.react(event, **fmt)
-        self._sync_panel()
-        return line
+    @property
+    def status(self) -> ui.StatusLine:
+        return self.query_one("#status", ui.StatusLine)
 
-    def make_copilot(self) -> CopilotService:
-        return self._copilot_factory(self)
+    @property
+    def suggest(self) -> ui.Suggestions:
+        return self.query_one("#suggest", ui.Suggestions)
 
-    # --- активність користувача будить фантома -----------------------------
+    def add(self, renderable: RenderableType) -> ui.Entry:
+        entry = ui.Entry(renderable)
+        self.query_one("#log", VerticalScroll).mount(entry)
+        return entry
+
+    def react(self, event: str, **fmt: object) -> None:
+        self.persona.react(event, **fmt)
+        self.status.refresh()
+
+    def _tick(self) -> None:
+        self.persona.tick()
+        self.status.refresh()
+
     async def on_event(self, event: events.Event) -> None:
         if isinstance(event, (events.Key, events.MouseDown)):
             was_sleeping = self.persona.mood == Mood.SLEEPING
             self.persona.poke()
             if was_sleeping:
-                self._sync_panel()
+                self.status.refresh()
         await super().on_event(event)
 
-    # --- дії ---------------------------------------------------------------
-    @property
-    def _tabs(self) -> TabbedContent:
-        return self.query_one("#modules", TabbedContent)
+    # --- поле вводу --------------------------------------------------------
+    @on(ui.PromptInput.Changed)
+    def _on_change(self, event: ui.PromptInput.Changed) -> None:
+        value = event.value
+        recalled, self._recalled = self._recalled, None
+        if value == recalled:
+            self.suggest.show([])
+        elif self._pending is None and value.startswith("/") and " " not in value:
+            self.suggest.show(match_commands(value))
+        else:
+            self.suggest.show([])
 
-    def action_module(self, module: str) -> None:
-        if module in MODULES:
-            self._tabs.active = module
-            if module in ("footprint", "coach"):
-                self.react("coming_soon")
+    @on(ui.PromptInput.Complete)
+    def _on_complete(self) -> None:
+        current = self.suggest.current
+        if current is not None:
+            self.prompt.value = f"/{current.name} "
+            self.prompt.cursor_position = len(self.prompt.value)
 
-    def _cycle(self, step: int) -> None:
-        on_main = self.screen is self.screen_stack[0]
-        if not on_main or isinstance(self.focused, FORM_WIDGETS):
-            # у формах Tab лишається звичною навігацією між полями
-            (self.screen.focus_next if step > 0 else self.screen.focus_previous)()
+    @on(ui.PromptInput.Navigate)
+    def _on_navigate(self, event: ui.PromptInput.Navigate) -> None:
+        if self.suggest.items:
+            self.suggest.move(event.step)
             return
-        current = MODULES.index(self._tabs.active) if self._tabs.active in MODULES else 0
-        self.action_module(MODULES[(current + step) % len(MODULES)])
+        if not self._history or self._pending is not None:
+            return
+        self._history_pos = max(0, min(len(self._history), self._history_pos + event.step))
+        at_end = self._history_pos >= len(self._history)
+        self._recalled = "" if at_end else self._history[self._history_pos]
+        self.prompt.value = self._recalled
+        self.prompt.cursor_position = len(self.prompt.value)
 
-    def action_next_module(self) -> None:
-        self._cycle(+1)
+    @on(ui.PromptInput.Submitted)
+    def _on_submit(self, event: ui.PromptInput.Submitted) -> None:
+        value = event.value
+        current = self.suggest.current
+        if current is not None and value.startswith("/") and " " not in value.strip():
+            value = f"/{current.name}"  # Enter на частково набраній команді виконує виділену
+        self.prompt.value = ""
+        self.suggest.show([])
 
-    def action_prev_module(self) -> None:
-        self._cycle(-1)
+        if self._pending is not None:
+            self._resolve_pending(value)
+            return
+        text = value.strip()
+        if not text:
+            return
+        self._history.append(text)
+        self._history_pos = len(self._history)
+        if self._stream_worker is not None and self._stream_worker.is_running:
+            self.add(ui.say(Say("Зачекай, я ще відповідаю (esc — перервати)", kind="error")))
+            return
+        self.add(ui.user_line(text))
+        if text.startswith("/"):
+            self._handle(self.commands.run(text))
+        else:
+            self._chat(text)
 
-    def action_back(self) -> None:
-        self.set_focus(None)
+    # --- результати команд -------------------------------------------------
+    def _handle(self, outcome: Outcome) -> None:
+        if isinstance(outcome, Say):
+            self.add(ui.say(outcome))
+            if outcome.react:
+                event, fmt = outcome.react
+                if event == "settings_saved":
+                    self.persona.name = self.settings.phantom_name
+                self.react(event, **fmt)
+            elif outcome.kind == "error":
+                self.persona.set_mood(Mood.ALERT)
+                self.status.refresh()
+        elif isinstance(outcome, StreamAction):
+            if self._require_key():
+                content = build_user_prompt(outcome.request, self.settings.get("default_language"))
+                self._stream(content, action=outcome.request)
+        elif isinstance(outcome, (Confirm, AskSecret)):
+            self._enter_pending(outcome)
+        elif isinstance(outcome, Clear):
+            self.query_one("#log", VerticalScroll).remove_children()
+            self.chat_history.clear()
+            self.last_output = ""
+            self.add(ui.welcome(self.persona.name, self._db_label))
+        elif isinstance(outcome, Exit):
+            self.exit()
 
-    def action_help(self) -> None:
-        self.push_screen(HelpScreen())
+    def _enter_pending(self, pending: Confirm | AskSecret) -> None:
+        self._pending = pending
+        text = pending.prompt if isinstance(pending, AskSecret) else pending.question
+        if isinstance(pending, AskSecret):
+            self.prompt.password = True
+            self.query_one("#prompt-box").add_class("secret")
+        self.prompt.placeholder = text
+        self.add(ui.say(Say(text)))
 
-    def action_settings(self) -> None:
-        def done(saved: bool | None) -> None:
-            if saved:
-                self.persona.name = self.settings.phantom_name
-                self.react("settings_saved")
+    def _leave_pending(self) -> None:
+        self._pending = None
+        self.prompt.password = False
+        self.prompt.placeholder = PLACEHOLDER
+        self.query_one("#prompt-box").remove_class("secret")
 
-        self.push_screen(SettingsScreen(), done)
+    def _resolve_pending(self, value: str) -> None:
+        pending = self._pending
+        self._leave_pending()
+        if isinstance(pending, AskSecret):
+            self._handle(pending.on_submit(value))  # секрет ніде не показуємо й не пишемо в історію
+        elif isinstance(pending, Confirm):
+            self.add(ui.user_line(value))
+            if value.strip().casefold() in ("y", "yes", "т", "так"):
+                self._handle(pending.on_yes())
+            else:
+                self.add(ui.say(Say("Скасовано")))
 
-    def action_add_contact(self) -> None:
-        self.action_module("people")
-        self.query_one(PeopleView).action_add()
+    # --- розмова з ШІ ------------------------------------------------------
+    def _require_key(self) -> bool:
+        if self.settings.has_api_key():
+            return True
+        self.add(ui.say(Say("Потрібен ключ API", ["введи /key — він збережеться в системному keyring"],
+                            kind="error")))
+        self.react("no_api_key")
+        return False
 
-    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
-        yield SystemCommand("Чат", "Напарник-листування", lambda: self.action_module("chat"))
-        yield SystemCommand("Люди", "Особиста CRM", lambda: self.action_module("people"))
-        yield SystemCommand("Додати контакт", "Нова людина в CRM", self.action_add_contact)
-        yield SystemCommand("Слід", "Перевірка власного цифрового сліду (v0.2)",
-                            lambda: self.action_module("footprint"))
-        yield SystemCommand("Коуч", "Підготовка до розмов (v0.3)", lambda: self.action_module("coach"))
-        yield SystemCommand("Налаштування", "Ім'я фантома, тон, ключ API", self.action_settings)
-        yield SystemCommand("Довідка", "Гарячі клавіші та приватність", self.action_help)
-        yield SystemCommand("Вихід", "Закрити PhantomStalker", self.exit)
+    def _chat(self, text: str) -> None:
+        if not self._require_key():
+            return
+        context = mention_context(self.crm, text)
+        self._stream(f"{context}\n\n{text}" if context else text)
+
+    def _stream(self, user_content: str, action: CopilotRequest | None = None) -> None:
+        self.chat_history.append({"role": "user", "content": user_content})
+        self._stream_worker = self._run_stream(action)
+
+    @work(exclusive=True, group="ai")
+    async def _run_stream(self, action: CopilotRequest | None) -> None:
+        entry = self.add(ui.phantom_message(""))
+        self.status.busy = True
+        self.react("copilot_start")
+        chunks: list[str] = []
+        ok = False
+        try:
+            copilot = self._copilot_factory(self)
+            source = copilot.stream(action) if action is not None else copilot.chat(list(self.chat_history))
+            async for chunk in source:
+                chunks.append(chunk)
+                entry.update(ui.phantom_message("".join(chunks)))
+            ok = True
+        except CopilotRefusal:
+            self.react("copilot_refusal")
+            entry.update(ui.say(Say("З цим я не допоможу — спробуймо інакше", kind="error")))
+        except CopilotError as exc:
+            self.react("copilot_error", error=str(exc))
+            entry.update(ui.say(Say(str(exc), kind="error")))
+        except Exception as exc:  # pragma: no cover - непередбачене не валить застосунок
+            self.react("copilot_error", error=type(exc).__name__)
+            entry.update(ui.say(Say(f"Несподівана помилка: {type(exc).__name__}", kind="error")))
+        finally:
+            self.status.busy = False
+            text = "".join(chunks)
+            if ok and text.strip():
+                self.chat_history.append({"role": "assistant", "content": text})
+                self.last_output = text
+                self.react("copilot_done")
+            else:
+                # без відповіді прибираємо питання, щоб ролі в історії чергувались
+                if self.chat_history and self.chat_history[-1]["role"] == "user":
+                    self.chat_history.pop()
+                if not chunks and ok:
+                    entry.remove()
+            self.status.refresh()
+
+    # --- клавіші -----------------------------------------------------------
+    def action_interrupt(self) -> None:
+        if self._stream_worker is not None and self._stream_worker.is_running:
+            self._stream_worker.cancel()
+            self.add(ui.say(Say("Перервано")))
+            self.status.busy = False
+            self.persona.set_mood(Mood.IDLE, "Окей, зупинився.")
+            self.status.refresh()
+        elif self._pending is not None:
+            self._leave_pending()
+            self.add(ui.say(Say("Скасовано")))
+        else:
+            self.prompt.value = ""
+
+    def action_ctrl_c(self) -> None:
+        if self.prompt.value:
+            self.prompt.value = ""
+        else:
+            self.exit()
 
     def on_unmount(self) -> None:
         try:
