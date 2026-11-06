@@ -146,3 +146,14 @@ def test_mention_context(env):
     assert "<contact>" in ctx and "любить каву" in ctx and "секрет" not in ctx
     assert mention_context(crm, "просто текст") == ""
     assert c.id
+
+
+def test_color_command(env):
+    _, settings, proc, _ = env
+    listing = proc.run("/color")
+    assert any("silver" in line for line in listing.details)
+    assert proc.run("/color mint").kind == "ok"
+    assert settings.get("color") == "mint"
+    assert proc.run("/color лавандовий").kind == "ok"
+    assert settings.get("color") == "lavender"
+    assert proc.run("/color orange").kind == "error"

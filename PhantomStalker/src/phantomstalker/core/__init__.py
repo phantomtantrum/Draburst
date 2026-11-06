@@ -1,3 +1,3 @@
-from phantomstalker.core.persona import COLORS, FRAMES, MINI, Mood, PersonaEngine
+from phantomstalker.core.persona import Mood, PersonaEngine
 
-__all__ = ["COLORS", "FRAMES", "MINI", "Mood", "PersonaEngine"]
+__all__ = ["Mood", "PersonaEngine"]

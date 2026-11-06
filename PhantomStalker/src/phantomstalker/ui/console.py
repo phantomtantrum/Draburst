@@ -1,4 +1,4 @@
-"""Мінімалістичні віджети консолі: стрічка повідомлень, рядок статусу, поле вводу, підказки."""
+"""Мінімалістичні віджети консолі: шапка з фантомом, стрічка, рядок статусу, поле вводу, підказки."""
 
 from __future__ import annotations
 
@@ -14,38 +14,41 @@ from textual.widgets import Input, Static
 
 from phantomstalker import __version__
 from phantomstalker.core.commands import Command, Say
-from phantomstalker.core.persona import COLORS, FRAMES, Mood, PersonaEngine
+from phantomstalker.core.persona import PersonaEngine
+from phantomstalker.core.sprite import big_grid, mini_grid, render
+from phantomstalker.core.theme import ERROR, MUTED, TEXT, current
 
-ORANGE = COLORS[Mood.IDLE]
-RED = COLORS[Mood.ALERT]
+BORDER = "#45474F"
 
 
-def welcome(name: str, location: str) -> RenderableType:
-    ghost = Text("\n".join(row.rstrip() for row in FRAMES[Mood.IDLE][0][1:]), style=ORANGE)
+def welcome(persona: PersonaEngine, location: str) -> RenderableType:
+    theme = current()
+    ghost = render(big_grid(persona.mood, persona.frame_index, theme))
     info = Text()
-    info.append(f"PhantomStalker v{__version__}\n", style=f"bold {ORANGE}")
-    info.append("Твій фантом. Твої люди. Твій слід.\n\n", style="italic")
-    info.append("/help", style=ORANGE)
-    info.append(" — команди   ")
-    info.append("@ім'я", style=ORANGE)
-    info.append(" — нотатки про людину\n")
-    info.append(location, style="dim")
-    grid = Table.grid(padding=(0, 2))
+    info.append("PhantomStalker", style=f"bold {TEXT}")
+    info.append(f" v{__version__}\n", style=MUTED)
+    info.append("Твій фантом. Твої люди. Твій слід.\n\n", style="#B9BCC8")
+    info.append("/help", style=theme.accent)
+    info.append(" — команди   ", style=MUTED)
+    info.append("@ім'я", style=theme.accent)
+    info.append(" — нотатки про людину\n", style=MUTED)
+    info.append(location, style="#62626C")
+    grid = Table.grid(padding=(0, 3))
+    grid.add_column(vertical="middle")
+    grid.add_column(vertical="middle")
     grid.add_row(ghost, info)
-    return Panel(grid, box=ROUNDED, border_style=ORANGE, expand=False, padding=(0, 1))
+    return Panel(grid, box=ROUNDED, border_style=BORDER, expand=False, padding=(0, 2))
 
 
 def user_line(text: str) -> RenderableType:
-    out = Text("> ", style="dim")
-    out.append(text, style="dim")
-    return out
+    return Text(f"> {text}", style=MUTED)
 
 
-def bullet(body: RenderableType, color: str = ORANGE) -> RenderableType:
+def bullet(body: RenderableType, color: str | None = None) -> RenderableType:
     grid = Table.grid(padding=(0, 1))
     grid.add_column(width=1, no_wrap=True)
     grid.add_column(ratio=1)
-    grid.add_row(Text("●", style=color), body)
+    grid.add_row(Text("●", style=color or current().body), body)
     return grid
 
 
@@ -54,13 +57,13 @@ def phantom_message(text: str) -> RenderableType:
 
 
 def say(result: Say) -> RenderableType:
-    color = RED if result.kind == "error" else ORANGE
+    error = result.kind == "error"
     body = Text(result.title, style="bold")
     for i, line in enumerate(result.details):
         body.append("\n")
-        body.append("⎿  " if i == 0 else "   ", style="dim")
-        body.append(line, style="dim" if result.kind != "error" else "")
-    return bullet(body, color)
+        body.append("⎿  " if i == 0 else "   ", style=MUTED)
+        body.append(line, style="" if error else MUTED)
+    return bullet(body, ERROR if error else None)
 
 
 class Entry(Static):
@@ -70,15 +73,46 @@ class Entry(Static):
 
     def __init__(self, body: RenderableType, **kwargs) -> None:
         super().__init__(body, **kwargs)
-        self.body = body
+        self._body = body
+
+    @property
+    def body(self) -> RenderableType:
+        return self._body
 
     def update(self, body: RenderableType = "", *, layout: bool = True) -> None:  # type: ignore[override]
-        self.body = body
+        self._body = body
         super().update(body, layout=layout)
 
 
+class WelcomeEntry(Entry):
+    """Шапка з великим анімованим фантомом."""
+
+    def __init__(self, persona: PersonaEngine, location: str, **kwargs) -> None:
+        self.persona = persona
+        self.location = location
+        super().__init__(welcome(persona, location), **kwargs)
+
+    @property
+    def body(self) -> RenderableType:
+        return welcome(self.persona, self.location)
+
+    def render(self) -> RenderableType:
+        return self.body
+
+
+class MiniGhost(Static):
+    DEFAULT_CSS = "MiniGhost { width: 9; height: 3; }"
+
+    def __init__(self, persona: PersonaEngine, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.persona = persona
+
+    def render(self) -> RenderableType:
+        return render(mini_grid(self.persona.mood, self.persona.frame_index, current()))
+
+
 class StatusLine(Static):
-    DEFAULT_CSS = "StatusLine { height: 1; padding: 0 1; }"
+    DEFAULT_CSS = "StatusLine { height: 3; width: 1fr; padding: 0 2; content-align: left middle; }"
 
     def __init__(self, persona: PersonaEngine, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -86,16 +120,15 @@ class StatusLine(Static):
         self.busy = False
 
     def render(self) -> RenderableType:
-        p = self.persona
-        out = Text(p.mini(), style=f"bold {p.color}")
-        out.append(f" {p.name}", style=p.color)
+        p, theme = self.persona, current()
+        out = Text(p.name, style=f"bold {theme.body}")
         line = p.line.splitlines()[0] if p.line else ""
         if self.busy:
             dots = "." * (p.frame_index % 3 + 1)
-            out.append(f"  {line.rstrip('…. ')}{dots}", style=p.color)
-            out.append("  (esc — перервати)", style="dim")
+            out.append(f"  {line.rstrip('…. ')}{dots}", style=theme.accent)
+            out.append("  esc — перервати", style=MUTED)
         elif line:
-            out.append(f"  {line}", style="dim italic")
+            out.append(f"  {line}", style=f"italic {MUTED}")
         return out
 
 
@@ -123,16 +156,16 @@ class Suggestions(Static):
 
     def render(self) -> RenderableType:
         if not self.items:
-            return Text("/ команди · @ім'я · ↑↓ історія · esc перервати · ctrl+c вихід", style="dim")
+            return Text("/ команди · @ім'я · ↑↓ історія · esc перервати · ctrl+c вихід", style=MUTED)
+        accent = current().accent
         width = max(len(c.name) + len(c.usage) for c in self.items) + 4
         out = Text()
         for i, c in enumerate(self.items):
             if i:
                 out.append("\n")
-            label = f"/{c.name} {c.usage}".ljust(width)
-            style = f"bold {ORANGE}" if i == self.selected else ""
-            out.append(label, style=style)
-            out.append(c.help, style=ORANGE if i == self.selected else "dim")
+            chosen = i == self.selected
+            out.append(f"/{c.name} {c.usage}".ljust(width), style=f"bold {accent}" if chosen else TEXT)
+            out.append(c.help, style=accent if chosen else MUTED)
         return out
 
 

@@ -16,6 +16,7 @@ DEFAULTS: dict[str, str] = {
     "default_language": "українська",
     "model": "claude-opus-5-5",
     "stale_after_days": "30",
+    "color": "silver",
 }
 
 

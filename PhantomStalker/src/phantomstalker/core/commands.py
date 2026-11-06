@@ -10,6 +10,7 @@ from typing import Literal
 from phantomstalker.services.copilot import Action, CopilotRequest
 from phantomstalker.services.crm import Contact, CRMRepository, humanize_days, parse_user_date
 from phantomstalker.services.settings import SettingsService
+from phantomstalker.core.theme import THEMES
 
 # --- результати команд ---------------------------------------------------------
 
@@ -79,6 +80,7 @@ COMMANDS: tuple[Command, ...] = (
     Command("remind", "", "нагадування"),
     Command("name", "<ім'я>", "перейменувати фантома"),
     Command("tone", "<опис>", "твій стиль письма"),
+    Command("color", "[колір]", "колір фантома"),
     Command("model", "[id]", "модель Claude"),
     Command("key", "", "задати ключ API (зберігається в keyring)"),
     Command("clear", "", "очистити розмову"),
@@ -333,6 +335,19 @@ class CommandProcessor:
             return Say("Твій стиль", [self.settings.tone_profile, "/tone <опис>"])
         self.settings.set("tone_profile", args)
         return Say("Запам'ятав твій стиль", [args], kind="ok", react=("settings_saved", {}))
+
+    def cmd_color(self, args: str) -> Outcome:
+        if not args:
+            now = self.settings.get("color")
+            lines = [f"{t.name:<10}{t.label}" + ("  ← зараз" if t.name == now else "") for t in THEMES.values()]
+            return Say("Кольори", [*lines, "/color <назва>"])
+        name = args.split()[0].casefold()
+        by_label = {t.label: t.name for t in THEMES.values()}
+        name = by_label.get(name, name)
+        if name not in THEMES:
+            raise CommandError(f"Немає кольору «{args}». Доступні: " + ", ".join(THEMES))
+        self.settings.set("color", name)
+        return Say(f"Колір: {THEMES[name].label}", kind="ok", react=("settings_saved", {}))
 
     def cmd_model(self, args: str) -> Outcome:
         if not args:

@@ -29,6 +29,7 @@ from phantomstalker.core.commands import (
     mention_context,
 )
 from phantomstalker.core.persona import Mood, PersonaEngine
+from phantomstalker.core.theme import current, set_current
 from phantomstalker.services.copilot import (
     CopilotError,
     CopilotRefusal,
@@ -68,8 +69,8 @@ class PhantomStalkerApp(App):
         padding: 0 1;
         border: round $foreground 35%;
     }
-    #prompt-box.secret { border: round #FF8C42; }
     #caret { width: 2; color: $foreground 60%; }
+    #status-row { height: 3; margin: 0 1; }
     PromptInput { border: none; height: 1; padding: 0; background: ansi_default; width: 1fr; }
     PromptInput:focus { border: none; background: ansi_default; }
     """
@@ -95,6 +96,8 @@ class PhantomStalkerApp(App):
         self.settings = SettingsService(self.conn, keyring_backend)
         self.crm = CRMRepository(self.conn)
         self.persona = PersonaEngine(self.settings.phantom_name)
+        set_current(self.settings.get("color"))
+        self._welcome: ui.WelcomeEntry | None = None
         self.commands = CommandProcessor(self.crm, self.settings, lambda: self.last_output)
         self._copilot_factory = copilot_factory
         self._animate = animate
@@ -110,7 +113,9 @@ class PhantomStalkerApp(App):
     # --- побудова ----------------------------------------------------------
     def compose(self) -> ComposeResult:
         yield VerticalScroll(id="log")
-        yield ui.StatusLine(self.persona, id="status")
+        with Horizontal(id="status-row"):
+            yield ui.MiniGhost(self.persona, id="mini")
+            yield ui.StatusLine(self.persona, id="status")
         with Horizontal(id="prompt-box"):
             yield Label(">", id="caret")
             yield ui.PromptInput(id="prompt", placeholder=PLACEHOLDER)
@@ -118,7 +123,7 @@ class PhantomStalkerApp(App):
 
     def on_mount(self) -> None:
         self.query_one("#log", VerticalScroll).anchor()
-        self.add(ui.welcome(self.persona.name, self._db_label))
+        self._add_welcome()
         self._greet()
         if self._animate:
             self.set_interval(TICK_SECONDS, self._tick)
@@ -156,6 +161,17 @@ class PhantomStalkerApp(App):
     def suggest(self) -> ui.Suggestions:
         return self.query_one("#suggest", ui.Suggestions)
 
+    def _add_welcome(self) -> None:
+        self._welcome = ui.WelcomeEntry(self.persona, self._db_label)
+        self.query_one("#log", VerticalScroll).mount(self._welcome)
+
+    def _refresh_persona(self) -> None:
+        """Перемалювати все, де видно фантома."""
+        for widget_id in ("#status", "#mini"):
+            self.query_one(widget_id).refresh()
+        if self._welcome is not None and self._welcome.is_mounted:
+            self._welcome.refresh()
+
     def add(self, renderable: RenderableType) -> ui.Entry:
         entry = ui.Entry(renderable)
         self.query_one("#log", VerticalScroll).mount(entry)
@@ -163,18 +179,18 @@ class PhantomStalkerApp(App):
 
     def react(self, event: str, **fmt: object) -> None:
         self.persona.react(event, **fmt)
-        self.status.refresh()
+        self._refresh_persona()
 
     def _tick(self) -> None:
         self.persona.tick()
-        self.status.refresh()
+        self._refresh_persona()
 
     async def on_event(self, event: events.Event) -> None:
         if isinstance(event, (events.Key, events.MouseDown)):
             was_sleeping = self.persona.mood == Mood.SLEEPING
             self.persona.poke()
             if was_sleeping:
-                self.status.refresh()
+                self._refresh_persona()
         await super().on_event(event)
 
     # --- поле вводу --------------------------------------------------------
@@ -243,10 +259,11 @@ class PhantomStalkerApp(App):
                 event, fmt = outcome.react
                 if event == "settings_saved":
                     self.persona.name = self.settings.phantom_name
+                    set_current(self.settings.get("color"))
                 self.react(event, **fmt)
             elif outcome.kind == "error":
                 self.persona.set_mood(Mood.ALERT)
-                self.status.refresh()
+                self._refresh_persona()
         elif isinstance(outcome, StreamAction):
             if self._require_key():
                 content = build_user_prompt(outcome.request, self.settings.get("default_language"))
@@ -257,7 +274,7 @@ class PhantomStalkerApp(App):
             self.query_one("#log", VerticalScroll).remove_children()
             self.chat_history.clear()
             self.last_output = ""
-            self.add(ui.welcome(self.persona.name, self._db_label))
+            self._add_welcome()
         elif isinstance(outcome, Exit):
             self.exit()
 
@@ -266,7 +283,7 @@ class PhantomStalkerApp(App):
         text = pending.prompt if isinstance(pending, AskSecret) else pending.question
         if isinstance(pending, AskSecret):
             self.prompt.password = True
-            self.query_one("#prompt-box").add_class("secret")
+            self.query_one("#prompt-box").styles.border = ("round", current().accent)
         self.prompt.placeholder = text
         self.add(ui.say(Say(text)))
 
@@ -274,7 +291,7 @@ class PhantomStalkerApp(App):
         self._pending = None
         self.prompt.password = False
         self.prompt.placeholder = PLACEHOLDER
-        self.query_one("#prompt-box").remove_class("secret")
+        self.query_one("#prompt-box").styles.clear_rule("border")
 
     def _resolve_pending(self, value: str) -> None:
         pending = self._pending
@@ -343,7 +360,7 @@ class PhantomStalkerApp(App):
                     self.chat_history.pop()
                 if not chunks and ok:
                     entry.remove()
-            self.status.refresh()
+            self._refresh_persona()
 
     # --- клавіші -----------------------------------------------------------
     def action_interrupt(self) -> None:
@@ -352,7 +369,7 @@ class PhantomStalkerApp(App):
             self.add(ui.say(Say("Перервано")))
             self.status.busy = False
             self.persona.set_mood(Mood.IDLE, "Окей, зупинився.")
-            self.status.refresh()
+            self._refresh_persona()
         elif self._pending is not None:
             self._leave_pending()
             self.add(ui.say(Say("Скасовано")))

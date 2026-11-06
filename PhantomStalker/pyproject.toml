@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "phantomstalker"
 version = "0.1.0"
-description = "Термінальний компаньйон з оранжевим ШІ-фантомом — твій соціальний ко-пілот."
+description = "Термінальний компаньйон з піксельним ШІ-фантомом — твій соціальний ко-пілот."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

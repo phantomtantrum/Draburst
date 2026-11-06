@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timedelta
 
-from phantomstalker.core.persona import COLORS, FRAMES, REACTIONS, Mood, PersonaEngine
+from phantomstalker.core.persona import REACTIONS, Mood, PersonaEngine
 
 
 class FakeClock:
@@ -17,21 +17,11 @@ def make(**kw) -> tuple[PersonaEngine, FakeClock]:
     return PersonaEngine("Каспер", clock=clock, rng=random.Random(0), **kw), clock
 
 
-def test_every_mood_has_frames_and_color():
-    for mood in Mood:
-        assert FRAMES[mood], mood
-        assert mood in COLORS
-        widths = {len(row) for frame in FRAMES[mood] for row in frame}
-        assert len(widths) == 1, f"кадри {mood} мають різну ширину"
-
-
-def test_tick_cycles_frames():
+def test_tick_advances_frame():
     p, _ = make()
-    seen = set()
-    for _ in range(len(FRAMES[Mood.IDLE])):
-        seen.add(tuple(p.frame()))
-        p.tick()
-    assert len(seen) == len(FRAMES[Mood.IDLE])
+    start = p.frame_index
+    p.tick()
+    assert p.frame_index == start + 1
 
 
 def test_transient_moods_return_to_idle():

@@ -62,7 +62,7 @@ class CopilotRefusal(CopilotError):
 
 def build_system_prompt(phantom_name: str, tone_profile: str) -> str:
     return (
-        f"You are {phantom_name}, a small, friendly orange ghost who lives in the user's terminal "
+        f"You are {phantom_name}, a small, friendly pixel ghost with a curly tail who lives in the user's terminal "
         "and acts as their personal writing co-pilot inside the PhantomStalker app.\n\n"
         "Your job is to help the user write *their own* messages in *their own* voice. "
         "The user pastes a draft or a message they received and picks an action.\n\n"
@@ -97,7 +97,7 @@ def _default_client_factory(api_key: str | None) -> anthropic.AsyncAnthropic:
 
 def build_chat_system_prompt(phantom_name: str, tone_profile: str, language: str) -> str:
     return (
-        f"You are {phantom_name}, a small orange ghost who lives in the user's terminal and acts as "
+        f"You are {phantom_name}, a small pixel ghost with a curly tail who lives in the user's terminal and acts as "
         "their personal social co-pilot in the PhantomStalker app. You help the user communicate "
         "with people: draft and polish messages, find the right tone, translate, prepare for "
         "difficult conversations, think about what to talk about.\n\n"

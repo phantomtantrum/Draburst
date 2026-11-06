@@ -1,4 +1,4 @@
-"""Рушій персонажа: настрої, ASCII-кадри, репліки та простий цикл анімації."""
+"""Рушій персонажа: настрої, репліки та такт анімації. Вигляд — у core/sprite.py."""
 
 from __future__ import annotations
 
@@ -16,71 +16,6 @@ class Mood(StrEnum):
     HAPPY = "happy"
     ALERT = "alert"
     SLEEPING = "sleeping"
-
-
-def _ghost(eyes: str, mouth: str, hem: str, shift: int = 0, top: str = "") -> list[str]:
-    """Збирає один кадр фантома (6 рядків однакової ширини)."""
-    pad = " " * shift
-    rows = [
-        f"{top:<11}",
-        "   .---.   ",
-        f"  ( {eyes} )  ",
-        f"  |  {mouth}  |  ",
-        "  |     |  ",
-        f"  {hem}  ",
-    ]
-    width = 13
-    return [(pad + row).ljust(width)[:width] for row in rows]
-
-
-FRAMES: dict[Mood, list[list[str]]] = {
-    # спокійне похитування
-    Mood.IDLE: [
-        _ghost("o o", "‿", "'^'^'^'", 0),
-        _ghost("o o", "‿", "^'^'^'^", 1),
-        _ghost("- -", "‿", "'^'^'^'", 1),
-        _ghost("o o", "‿", "^'^'^'^", 0),
-    ],
-    # думає — біжать крапки
-    Mood.THINKING: [
-        _ghost("o O", "~", "'^'^'^'", 0, top="     .     "),
-        _ghost("O o", "~", "^'^'^'^", 0, top="     . .   "),
-        _ghost("o O", "~", "'^'^'^'", 0, top="     . . . "),
-    ],
-    # успіх — яскравіший, «усміхнений»
-    Mood.HAPPY: [
-        _ghost("^ ^", "◡", "'^'^'^'", 0, top="   *   *   "),
-        _ghost("^ ^", "▽", "^'^'^'^", 1, top="  *   *    "),
-    ],
-    # увага / помилка
-    Mood.ALERT: [
-        _ghost("O O", "□", "'^'^'^'", 0, top="     !     "),
-        _ghost("O O", "□", "'^'^'^'", 1, top="     !!    "),
-    ],
-    # неактивність
-    Mood.SLEEPING: [
-        _ghost("- -", "-", "'^'^'^'", 0, top="        z  "),
-        _ghost("- -", "o", "'^'^'^'", 0, top="       zZ  "),
-        _ghost("- -", "-", "'^'^'^'", 0, top="      zZz  "),
-    ],
-}
-
-# Мініатюрна мордочка для рядка статусу над полем вводу.
-MINI: dict[Mood, list[str]] = {
-    Mood.IDLE: ["(o o)", "(o o)", "(o o)", "(- -)"],  # зрідка кліпає
-    Mood.THINKING: ["(o O)", "(O o)"],
-    Mood.HAPPY: ["(^ ^)", "(^‿^)"],
-    Mood.ALERT: ["(O O)", "(O_O)"],
-    Mood.SLEEPING: ["(- -)", "(- -)"],
-}
-
-COLORS: dict[Mood, str] = {
-    Mood.IDLE: "#FF8C42",  # тепле помаранчеве світіння
-    Mood.THINKING: "#FFA94D",
-    Mood.HAPPY: "#FFB75E",  # яскравіший
-    Mood.ALERT: "#E8553A",  # бурштиново-червоний акцент
-    Mood.SLEEPING: "#8A6A55",  # приглушені кольори
-}
 
 
 @dataclass(frozen=True)
@@ -144,19 +79,6 @@ class PersonaEngine:
         self.frame_index = 0
         self._transient_left = 0
         self._last_activity = clock()
-
-    # --- кадри -------------------------------------------------------------
-    @property
-    def color(self) -> str:
-        return COLORS[self.mood]
-
-    def mini(self) -> str:
-        faces = MINI[self.mood]
-        return faces[self.frame_index % len(faces)]
-
-    def frame(self) -> list[str]:
-        frames = FRAMES[self.mood]
-        return frames[self.frame_index % len(frames)]
 
     # --- зміна стану -------------------------------------------------------
     def set_mood(self, mood: Mood, line: str | None = None) -> None:
